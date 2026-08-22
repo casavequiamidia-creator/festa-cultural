@@ -11,7 +11,7 @@ const statusLabel = { disponivel: 'Disponível', poucas_unidades: 'Restam poucas
 
 function setNetwork(message, tone = '') { const element = $('#network-status'); element.textContent = message; element.className = `network-status ${tone}`; }
 function routeTo(route) { $$('.screen').forEach((screen) => { screen.hidden = screen.dataset.screen !== route; screen.classList.toggle('active', screen.dataset.screen === route); }); $$('.nav-link').forEach((link) => link.classList.toggle('active', link.dataset.route === route)); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-function renderImage(url, alt, className = 'card-image') { return url ? `<img class="${className}" src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" loading="lazy" />` : `<div class="${className} image-placeholder" aria-hidden="true">✦</div>`; }
+function renderImage(url, alt, className = 'card-image') { return url ? `<img class="${className}" src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" loading="lazy" />` : `<div class="${className} image-placeholder" role="img" aria-label="Espaço reservado para imagem de ${escapeHtml(alt)}"></div>`; }
 function renderStatus(status) { return `<span class="status status-${escapeHtml(status)}">${escapeHtml(statusLabel[status] || status)}</span>`; }
 
 function renderHome() {
@@ -28,12 +28,12 @@ function renderProducts() {
 
 function renderActivities() {
   const items = state.produtos.filter((item) => item.categoria === 'brincadeira');
-  $('#activities-list').innerHTML = items.length ? items.map((item) => `<article class="activity-card ${item.status === 'esgotado' ? 'sold-out' : ''}"><span class="activity-symbol">◎</span><div><div class="card-topline">${renderStatus(item.status)}</div><h3>${escapeHtml(item.nome)}</h3><p>${escapeHtml(item.descricao || 'Informações disponíveis na barraca.')}</p><strong class="price">${formatMoney(item.preco)}</strong></div></article>`).join('') : emptyState('As brincadeiras serão divulgadas em breve.');
+  $('#activities-list').innerHTML = items.length ? items.map((item) => `<article class="activity-card ${item.status === 'esgotado' ? 'sold-out' : ''}">${renderImage(item.imagem_url, item.nome, 'activity-image')}<div><div class="card-topline">${renderStatus(item.status)}</div><h3>${escapeHtml(item.nome)}</h3><p>${escapeHtml(item.descricao || 'Informações disponíveis na barraca.')}</p><strong class="price">${formatMoney(item.preco)}</strong></div></article>`).join('') : emptyState('As brincadeiras serão divulgadas em breve.');
 }
 
 function renderDraws() {
   const container = $('#draws-list');
-  container.innerHTML = state.sorteios.length ? state.sorteios.map((draw) => `<article class="draw-card ${draw.status === 'em_andamento' ? 'is-live' : ''}"><div class="draw-type">${escapeHtml(draw.tipo)}</div>${renderStatus(draw.status)}<h3>${escapeHtml(draw.identificacao)}</h3><p>${escapeHtml(draw.premio)}</p><strong>${draw.valor_cartela > 0 ? `Cartela: ${formatMoney(draw.valor_cartela)}` : 'Participação especial'}</strong><button class="secondary-button" data-open-draw="${draw.id}" type="button">${draw.status === 'em_andamento' ? 'Acompanhar ao vivo' : 'Ver detalhes'}</button></article>`).join('') : emptyState('Os sorteios aparecerão aqui assim que forem cadastrados.');
+  container.innerHTML = state.sorteios.length ? state.sorteios.map((draw) => `<article class="draw-card ${draw.status === 'em_andamento' ? 'is-live' : ''}"><div class="draw-image image-placeholder" role="img" aria-label="Espaço reservado para imagem do prêmio ${escapeHtml(draw.premio)}"></div><div class="draw-card-content"><div class="draw-type">${escapeHtml(draw.tipo)}</div>${renderStatus(draw.status)}<h3>${escapeHtml(draw.identificacao)}</h3><p>${escapeHtml(draw.premio)}</p><strong>${draw.valor_cartela > 0 ? `Cartela: ${formatMoney(draw.valor_cartela)}` : 'Participação especial'}</strong><button class="secondary-button" data-open-draw="${draw.id}" type="button">${draw.status === 'em_andamento' ? 'Acompanhar ao vivo' : 'Ver detalhes'}</button></div></article>`).join('') : emptyState('Os sorteios aparecerão aqui assim que forem cadastrados.');
   if (state.selectedDrawId) renderDrawDetail();
 }
 

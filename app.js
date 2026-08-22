@@ -4,3 +4,5 @@
  * em js/supabase-config.js e js/app.js para não expor credenciais administrativas.
  */
 import './js/app.js';
+
+window.lucide?.createIcons();
