@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#b9411f" />
+    <meta name="description" content="Cardápio, sorteios e programação da Festa Cultural." />
+    <title>Festa Cultural | Arraial Digital</title>
+    <link rel="preconnect" href="https://esm.sh" />
+    <link rel="stylesheet" href="./assets/styles.css" />
+  </head>
+  <body>
+    <div class="site-shell">
+      <aside class="sidebar" aria-label="Navegação principal">
+        <a class="brand" href="#inicio" data-route="inicio" aria-label="Festa Cultural: ir para início">
+          <span class="brand-mark" aria-hidden="true">✦</span>
+          <span><strong>Festa</strong><em>Cultural</em></span>
+        </a>
+        <nav class="nav-links" aria-label="Seções do evento">
+          <button class="nav-link active" type="button" data-route="inicio"><span>⌂</span> Início</button>
+          <button class="nav-link" type="button" data-route="cardapio"><span>🍔</span> Cardápio</button>
+          <button class="nav-link" type="button" data-route="pix"><span>▣</span> PIX</button>
+          <button class="nav-link" type="button" data-route="sorteios"><span>🎟</span> Sorteios</button>
+          <button class="nav-link" type="button" data-route="rainha"><span>♕</span> Rainha</button>
+          <button class="nav-link" type="button" data-route="barracas"><span>◎</span> Barracas</button>
+          <button class="nav-link" type="button" data-route="cronograma"><span>◷</span> Cronograma</button>
+        </nav>
+        <a class="admin-link" href="./admin.html">Área da organização <span aria-hidden="true">→</span></a>
+      </aside>
+
+      <main class="main-content">
+        <div id="network-status" class="network-status" role="status" aria-live="polite">Conectando ao evento...</div>
+        <div id="public-alert" class="public-alert" role="alert" hidden></div>
+
+        <section class="screen active" id="inicio" data-screen="inicio">
+          <div class="eyebrow">Arraial digital da escola</div>
+          <div class="hero-grid">
+            <div>
+              <p class="kicker">Seja bem-vindo!</p>
+              <h1>Uma festa boa é uma festa vivida <i>juntinho.</i></h1>
+              <p class="lead">Confira o cardápio, prepare o PIX e acompanhe cada momento da nossa Festa Cultural pelo celular.</p>
+              <button class="primary-button" type="button" data-route="cardapio">Ver cardápio <span aria-hidden="true">→</span></button>
+            </div>
+            <div class="hero-illustration" aria-hidden="true">
+              <div class="moon">☾</div><div class="flag flag-a"></div><div class="flag flag-b"></div><div class="flag flag-c"></div>
+              <div class="bonfire"><span>♨</span></div><div class="hill hill-a"></div><div class="hill hill-b"></div>
+            </div>
+          </div>
+          <div id="live-hero" class="live-hero" hidden></div>
+          <div class="quick-grid">
+            <button class="quick-card" type="button" data-route="pix"><span>▣</span><strong>Pagamento fácil</strong><small>Copie sua chave PIX antes de entrar na fila.</small></button>
+            <button class="quick-card" type="button" data-route="cronograma"><span>◷</span><strong>Não perca nada</strong><small>Veja a programação e os próximos horários.</small></button>
+            <button class="quick-card" type="button" data-route="sorteios"><span>✦</span><strong>Ao vivo</strong><small>O bingo e as rifas atualizam sem recarregar.</small></button>
+          </div>
+          <section class="sponsors-section" aria-labelledby="sponsors-title">
+            <p class="section-label">Quem faz a festa acontecer</p><h2 id="sponsors-title">Apoio & patrocinadores</h2>
+            <div class="sponsors"><div>PARCEIRO<br /><b>LOCAL</b></div><div>ESCOLA<br /><b>UNIDA</b></div><div>COMUNIDADE<br /><b>PRESENTE</b></div></div>
+          </section>
+        </section>
+
+        <section class="screen" id="cardapio" data-screen="cardapio" hidden>
+          <div class="section-header"><div><p class="kicker">Sabores da festa</p><h2>Cardápio digital</h2></div><span class="section-icon">🍴</span></div>
+          <div class="pix-tip"><span>💡</span><p>Vai pagar no PIX? Copie a chave na aba <button type="button" data-route="pix">PIX</button> e abra o app do seu banco antes de entrar na fila.</p></div>
+          <div class="filter-row" role="group" aria-label="Filtrar cardápio">
+            <button class="filter active" data-category="todos" type="button">Todos</button><button class="filter" data-category="comida" type="button">Comidas</button><button class="filter" data-category="salgado" type="button">Salgados</button><button class="filter" data-category="doce" type="button">Doces</button><button class="filter" data-category="bebida" type="button">Bebidas</button>
+          </div>
+          <div id="products-list" class="product-grid" aria-live="polite"></div>
+        </section>
+
+        <section class="screen" id="pix" data-screen="pix" hidden>
+          <div class="section-header"><div><p class="kicker">Pagamento rápido</p><h2>PIX da escola</h2></div><span class="section-icon">▣</span></div>
+          <div class="pix-layout"><div class="qr-placeholder" aria-label="QR Code: configure o endereço da imagem no arquivo de configuração"><span>▣</span><small>QR Code<br />a configurar</small></div><div class="pix-details"><p class="section-label">Copie e cole</p><h3>Pague com segurança</h3><p>Abra o aplicativo do seu banco, confira os dados e apresente o comprovante na barraca.</p><code id="pix-key">CHAVE PIX A CONFIGURAR</code><button id="copy-pix" class="primary-button" type="button">Copiar chave PIX</button><p id="pix-feedback" class="feedback" role="status" aria-live="polite"></p><dl><div><dt>Favorecido</dt><dd id="pix-holder">Escola — a configurar</dd></div><div><dt>Instituição</dt><dd id="pix-bank">Banco — a configurar</dd></div></dl></div></div>
+        </section>
+
+        <section class="screen" id="sorteios" data-screen="sorteios" hidden>
+          <div class="section-header"><div><p class="kicker">Tudo ao vivo</p><h2>Sorteios & bingo</h2></div><span class="section-icon">🎲</span></div>
+          <div id="draws-list" class="draw-grid" aria-live="polite"></div>
+          <div id="draw-detail" class="draw-detail" hidden></div>
+        </section>
+
+        <section class="screen" id="rainha" data-screen="rainha" hidden>
+          <div class="section-header"><div><p class="kicker">Nossa realeza</p><h2>Rainha Caipira</h2></div><span class="section-icon">♕</span></div>
+          <p class="lead compact">Conheça as candidatas e acompanhe o desfile para a entrega da faixa.</p><div id="candidates-list" class="candidate-grid" aria-live="polite"></div>
+        </section>
+
+        <section class="screen" id="barracas" data-screen="barracas" hidden>
+          <div class="section-header"><div><p class="kicker">Diversão para todo mundo</p><h2>Barracas & brincadeiras</h2></div><span class="section-icon">◎</span></div>
+          <div id="activities-list" class="activity-grid" aria-live="polite"></div>
+        </section>
+
+        <section class="screen" id="cronograma" data-screen="cronograma" hidden>
+          <div class="section-header"><div><p class="kicker">Programe-se</p><h2>Cronograma</h2></div><span class="section-icon">◷</span></div>
+          <div id="schedule-list" class="timeline" aria-live="polite"></div>
+        </section>
+      </main>
+    </div>
+    <a id="help-button" class="help-button" href="#" target="_blank" rel="noopener" aria-label="Falar com a organização pelo WhatsApp">?</a>
+    <script type="module" src="./js/app.js"></script>
+  </body>
+</html>
