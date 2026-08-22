@@ -1,0 +1,5 @@
+/*
+ * Ponto de entrada de estilos do site.
+ * A folha principal permanece modularizada em assets/ para facilitar a manutenção.
+ */
+@import url('./assets/styles.css');
