@@ -4,7 +4,7 @@ const $ = (selector) => document.querySelector(selector);
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[char]));
 const formatMoney = (value) => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const statusLabel = { disponivel: 'Disponível', poucas_unidades: 'Poucas unidades', esgotado: 'Esgotado', aguardando: 'Aguardando', em_andamento: 'Em andamento', realizado: 'Realizado', pendente: 'Pendente' };
-let state = { produtos: [], sorteios: [], cronograma: [], alertChannel: null };
+let state = { produtos: [], sorteios: [], cronograma: [], alertChannel: null, alertStatus: 'CONECTANDO' };
 
 function feedback(selector, message, isError = false) { const element = $(selector); element.textContent = message; element.classList.toggle('error', isError); }
 function productControls(product) { return `<div class="status-controls"><button data-product-status="${product.id}|disponivel" class="${product.status === 'disponivel' ? 'selected' : ''}" type="button">Disponível</button><button data-product-status="${product.id}|poucas_unidades" class="${product.status === 'poucas_unidades' ? 'selected' : ''}" type="button">Poucas</button><button data-product-status="${product.id}|esgotado" class="${product.status === 'esgotado' ? 'selected' : ''}" type="button">Esgotado</button></div>`; }
@@ -15,8 +15,15 @@ function renderSchedule() { $('#admin-schedule').innerHTML = state.cronograma.le
 function renderAll() { renderProducts(); renderSelect(); renderSchedule(); }
 async function loadData() { const [produtos, sorteios, cronograma] = await Promise.all([supabase.from('produtos').select('*').order('nome'), supabase.from('sorteios').select('*').order('id', { ascending: false }), supabase.from('cronograma').select('*').order('horario_previsto')]); const error = [produtos, sorteios, cronograma].find((result) => result.error)?.error; if (error) { feedback('#login-feedback', error.message, true); return; } state.produtos = produtos.data || []; state.sorteios = sorteios.data || []; state.cronograma = cronograma.data || []; renderAll(); }
 async function updateTable(table, values, id) { const { error } = await supabase.from(table).update(values).eq('id', id); if (error) throw error; }
-function subscribe() { ['produtos', 'sorteios', 'cronograma'].forEach((table) => supabase.channel(`admin-${table}`).on('postgres_changes', { event: '*', schema: 'public', table }, loadData).subscribe()); state.alertChannel = supabase.channel('avisos-globais').subscribe(); }
-async function showAdmin(session) { $('#login-panel').hidden = true; $('#admin-panel').hidden = false; $('#sign-out').hidden = false; $('#admin-email').textContent = session.user.email; await loadData(); subscribe(); }
+async function subscribe() {
+  ['produtos', 'sorteios', 'cronograma'].forEach((table) => supabase.channel(`admin-${table}`).on('postgres_changes', { event: '*', schema: 'public', table }, loadData).subscribe());
+  // Canal privado: o Realtime valida as policies com o token da sessao do organizador.
+  await supabase.realtime.setAuth();
+  state.alertChannel = supabase.channel('avisos-globais', { config: { private: true } });
+  state.alertStatus = 'CONECTANDO';
+  state.alertChannel.subscribe((status, error) => { state.alertStatus = status; if (error) console.error('Canal de avisos:', error.message); });
+}
+async function showAdmin(session) { $('#login-panel').hidden = true; $('#admin-panel').hidden = false; $('#sign-out').hidden = false; $('#admin-email').textContent = session.user.email; await loadData(); await subscribe(); }
 
 $('#login-form').addEventListener('submit', async (event) => { event.preventDefault(); feedback('#login-feedback', 'Entrando...'); const { data, error } = await supabase.auth.signInWithPassword({ email: $('#email').value, password: $('#password').value }); if (error) { feedback('#login-feedback', error.message, true); return; } showAdmin(data.session); });
 $('#sign-out').addEventListener('click', async () => { await supabase.auth.signOut(); window.location.reload(); });
@@ -31,7 +38,7 @@ document.addEventListener('click', async (event) => {
 });
 document.addEventListener('submit', async (event) => {
   if (event.target.id === 'number-form') { event.preventDefault(); const draw = state.sorteios.find((item) => String(item.id) === $('#active-draw').value); const number = Number($('#called-number').value); if (!Number.isInteger(number)) return; const numbers = Array.isArray(draw.numeros_sorteados) ? draw.numeros_sorteados.map(Number) : []; if (!numbers.includes(number)) numbers.push(number); try { await updateTable('sorteios', { numeros_sorteados: numbers, ultimo_numero: number, status: draw.status === 'aguardando' ? 'em_andamento' : draw.status }, draw.id); $('#called-number').value = ''; feedback('#draw-feedback', 'Número atualizado ao vivo.'); } catch (error) { feedback('#draw-feedback', error.message, true); } }
-  if (event.target.id === 'alert-form') { event.preventDefault(); const message = $('#alert-message').value.trim(); if (!message) return; const result = await state.alertChannel.send({ type: 'broadcast', event: 'alerta', payload: { mensagem: message } }); if (result === 'ok') { feedback('#alert-feedback', 'Alerta enviado para os visitantes conectados.'); $('#alert-message').value = ''; } else feedback('#alert-feedback', 'Não foi possível enviar o alerta. Tente novamente.', true); }
+  if (event.target.id === 'alert-form') { event.preventDefault(); const message = $('#alert-message').value.trim(); if (!message) return; if (state.alertStatus !== 'SUBSCRIBED') { feedback('#alert-feedback', 'Canal de avisos ainda conectando. Aguarde alguns segundos e tente de novo.', true); return; } const result = await state.alertChannel.send({ type: 'broadcast', event: 'alerta', payload: { mensagem: message } }); if (result === 'ok') { feedback('#alert-feedback', 'Alerta enviado para os visitantes conectados.'); $('#alert-message').value = ''; } else feedback('#alert-feedback', 'Não foi possível enviar o alerta. Tente novamente.', true); }
 });
 document.addEventListener('click', async (event) => { if (event.target.id === 'reset-draw') { const draw = state.sorteios.find((item) => String(item.id) === $('#active-draw').value); if (!draw || !window.confirm('Limpar todos os números deste sorteio?')) return; try { await updateTable('sorteios', { numeros_sorteados: [], ultimo_numero: null, status: 'aguardando' }, draw.id); feedback('#draw-feedback', 'Sorteio resetado.'); } catch (error) { feedback('#draw-feedback', error.message, true); } } });
 const { data: { session } } = await supabase.auth.getSession(); if (session) showAdmin(session);

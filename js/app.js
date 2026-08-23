@@ -83,9 +83,12 @@ async function loadAll() {
 function showPublicAlert(message) { const alert = $('#public-alert'); alert.textContent = `📣 ${message}`; alert.hidden = false; clearTimeout(showPublicAlert.timer); showPublicAlert.timer = setTimeout(() => { alert.hidden = true; }, 25000); }
 function configureStaticInfo() { $('#pix-key').textContent = EVENT_CONFIG.pixKey; $('#pix-holder').textContent = EVENT_CONFIG.pixHolder; $('#pix-bank').textContent = EVENT_CONFIG.pixBank; const help = $('#help-button'); if (EVENT_CONFIG.whatsappNumber) help.href = `https://wa.me/${EVENT_CONFIG.whatsappNumber.replace(/\D/g, '')}`; else help.hidden = true; const qr = $('.qr-placeholder'); if (EVENT_CONFIG.pixQrImage) qr.innerHTML = `<img src="${escapeHtml(EVENT_CONFIG.pixQrImage)}" alt="QR Code PIX" />`; }
 
-function subscribeRealtime() {
+async function subscribeRealtime() {
   ['produtos', 'sorteios', 'cronograma', 'candidatas'].forEach((table) => supabase.channel(`festa-${table}`).on('postgres_changes', { event: '*', schema: 'public', table }, () => loadAll()).subscribe((status) => { if (status === 'SUBSCRIBED') setNetwork('Informações ao vivo', 'online'); if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setNetwork('Rede instável. Reconectando...', 'offline'); }));
-  supabase.channel('avisos-globais').on('broadcast', { event: 'alerta' }, ({ payload }) => { if (payload?.mensagem) showPublicAlert(payload.mensagem); }).subscribe();
+  // O canal de avisos e privado: so organizadores publicam nele. setAuth() e
+  // obrigatorio para o Realtime avaliar as policies de realtime.messages.
+  await supabase.realtime.setAuth();
+  supabase.channel('avisos-globais', { config: { private: true } }).on('broadcast', { event: 'alerta' }, ({ payload }) => { if (payload?.mensagem) showPublicAlert(payload.mensagem); }).subscribe();
 }
 
 const menuToggle = document.querySelector('.menu-toggle');
