@@ -3,3 +3,4 @@
  * A folha principal permanece modularizada em assets/ para facilitar a manutenção.
  */
 @import url('./assets/styles.css');
+@import url('./assets/arraial-theme.css');

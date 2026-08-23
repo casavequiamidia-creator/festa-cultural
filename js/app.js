@@ -88,8 +88,15 @@ function subscribeRealtime() {
   supabase.channel('avisos-globais').on('broadcast', { event: 'alerta' }, ({ payload }) => { if (payload?.mensagem) showPublicAlert(payload.mensagem); }).subscribe();
 }
 
+const menuToggle = document.querySelector('.menu-toggle');
+menuToggle?.addEventListener('click', () => {
+  const isOpen = document.body.classList.toggle('menu-open');
+  menuToggle.setAttribute('aria-expanded', String(isOpen));
+  menuToggle.setAttribute('aria-label', isOpen ? 'Fechar menu' : 'Abrir menu');
+});
+
 document.addEventListener('click', (event) => {
-  const route = event.target.closest('[data-route]'); if (route) { event.preventDefault(); routeTo(route.dataset.route); }
+  const route = event.target.closest('[data-route]'); if (route) { event.preventDefault(); routeTo(route.dataset.route); document.body.classList.remove('menu-open'); menuToggle?.setAttribute('aria-expanded', 'false'); menuToggle?.setAttribute('aria-label', 'Abrir menu'); }
   const draw = event.target.closest('[data-open-draw]'); if (draw) { state.selectedDrawId = Number(draw.dataset.openDraw); routeTo('sorteios'); renderDrawDetail(); $('#draw-detail').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 });
 $$('.filter').forEach((button) => button.addEventListener('click', () => { state.category = button.dataset.category; $$('.filter').forEach((item) => item.classList.toggle('active', item === button)); renderProducts(); }));
