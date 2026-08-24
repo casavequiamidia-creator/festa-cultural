@@ -22,7 +22,10 @@
           <label for="active-event">Editando agora<select id="active-event"></select></label>
           <div class="event-bar-foot">
             <p id="event-link" class="event-link"></p>
-            <button class="small-button" type="button" id="edit-event">Editar dados desta festa</button>
+            <div class="card-tools">
+              <a class="small-button preview-button" id="preview-event" href="#" target="_blank" rel="noopener">Ver como visitante</a>
+              <button class="small-button" type="button" id="edit-event">Editar dados desta festa</button>
+            </div>
           </div>
         </section>
 
@@ -71,20 +74,6 @@
       </section>
     </main>
 
-    <dialog id="editor" class="editor-dialog" aria-labelledby="editor-title">
-      <form id="editor-form">
-        <header class="editor-head">
-          <h2 id="editor-title">Editar</h2>
-          <button id="editor-close" class="text-button" type="button">Fechar</button>
-        </header>
-        <div id="editor-fields" class="editor-fields"></div>
-        <p id="editor-feedback" class="feedback" role="alert"></p>
-        <footer class="editor-actions">
-          <button id="editor-delete" class="danger-button" type="button">Excluir</button>
-          <button id="editor-save" class="primary-button" type="submit">Salvar alterações</button>
-        </footer>
-      </form>
-    </dialog>
 
     <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
     <script>window.lucide?.createIcons();</script>

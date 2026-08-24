@@ -2,7 +2,7 @@ import { EVENT_CONFIG, supabase } from './supabase-config.js';
 
 // `pedido` é a Lista de pedido do visitante: um mapa { idDoProduto: quantidade }
 // guardado apenas no localStorage do próprio celular. Nada é enviado ao banco.
-const state = { produtos: [], sorteios: [], cronograma: [], candidatas: [], category: 'todos', selectedDrawId: null, route: 'inicio', pedido: {}, vibrar: true, evento: null, conexao: 'conectando', canal: null, ultimoAvisoId: 0, tentativas: 0 };
+const state = { produtos: [], sorteios: [], cronograma: [], candidatas: [], category: 'todos', selectedDrawId: null, route: 'inicio', pedido: {}, vibrar: true, evento: null, modoEdicao: false, mostrarChips: true, conexao: 'conectando', canal: null, ultimoAvisoId: 0, tentativas: 0 };
 // Rede de festa cai e volta o tempo todo, e ha operadora que bloqueia WebSocket.
 // Por isso o site nunca depende so do Realtime: ele tambem recarrega sozinho.
 const POLL_AO_VIVO = 45000;
@@ -81,6 +81,61 @@ function renderStatus(status) { return `<span class="status status-${escapeHtml(
 // Escolhe um ícone pelo primeiro alérgeno citado, só para dar leitura rápida ao selo.
 function allergenIcon(text = '') { const value = text.toLowerCase(); if (value.includes('amendoim') || value.includes('castanha') || value.includes('nozes')) return '🥜'; if (value.includes('glúten') || value.includes('gluten') || value.includes('trigo')) return '🌾'; if (value.includes('leite') || value.includes('lactose')) return '🥛'; if (value.includes('ovo')) return '🥚'; return '⚠️'; }
 function renderAllergens(item) { return item.alergenos ? `<span class="allergen-tag"><i aria-hidden="true">${allergenIcon(item.alergenos)}</i>${escapeHtml(item.alergenos)}</span>` : ''; }
+
+/* ------------------------------------------------------------------ *
+ * Modo organizador: a mesma tela do visitante, com "Editar" em cada item.
+ *
+ * O editor mora em js/editor.js e é carregado sob demanda — quem só quer ver
+ * o cardápio não baixa nada disso.
+ * ------------------------------------------------------------------ */
+let editorAdmin = null;
+
+function chipEditar(table, id) {
+  if (!state.modoEdicao || !state.mostrarChips) return '';
+  return `<button class="edit-chip" type="button" data-admin-edit="${table}|${id}" aria-label="Editar este item"><i aria-hidden="true">✎</i>Editar</button>`;
+}
+
+function renderAdminBar() {
+  const barra = $('#admin-bar');
+  if (!barra) return;
+  barra.innerHTML = `<span class="admin-bar-tag">Modo organizador</span>
+    <span class="admin-bar-text">${state.mostrarChips ? 'Toque em <b>Editar</b> em qualquer item para alterá-lo aqui mesmo.' : 'Edição oculta: a tela está exatamente como o visitante vê.'}</span>
+    <span class="admin-bar-acoes">
+      <button class="small-button" type="button" data-toggle-chips>${state.mostrarChips ? 'Ocultar edição' : 'Mostrar edição'}</button>
+      <button class="small-button" type="button" data-admin-edit="eventos|${state.evento.id}">Dados da festa</button>
+      <a class="small-button" href="/admin">Painel</a>
+    </span>`;
+}
+
+async function ativarModoOrganizador() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return;
+  const { createEditor, souOrganizador } = await import('./editor.js');
+  // Só entra no modo edição quem realmente pode gravar; caso contrário o
+  // organizador clicaria em "Editar" e levaria um erro de permissão a cada item.
+  if (await souOrganizador() !== true) return;
+  state.modoEdicao = true;
+  editorAdmin = createEditor({
+    getEventoId: () => state.evento?.id ?? null,
+    getRecord: (table, id) => (table === 'eventos' ? state.evento : (state[table] || []).find((entry) => String(entry.id) === String(id))),
+    getSorteios: () => state.sorteios,
+    getOrganizador: () => true,
+    onSaved: async (table) => {
+      if (table === 'eventos') {
+        const { data } = await supabase.from('eventos').select('*').eq('id', state.evento.id).maybeSingle();
+        if (data) { state.evento = data; aplicarMarca(data); configureStaticInfo(); }
+      }
+      await loadAll();
+    },
+  });
+  const barra = document.createElement('div');
+  barra.id = 'admin-bar';
+  barra.className = 'admin-bar';
+  document.body.appendChild(barra);
+  document.body.classList.add('modo-organizador');
+  renderAdminBar();
+  renderAll();
+}
 
 /* ------------------------------------------------------------------ *
  * Aviso de numero novo: vibracao + destaque na tela
@@ -224,12 +279,12 @@ function renderHome() {
 
 function renderProducts() {
   const items = state.produtos.filter((item) => item.categoria !== 'brincadeira' && (state.category === 'todos' || item.categoria === state.category));
-  $('#products-list').innerHTML = items.length ? items.map((item) => `<article class="product-card ${item.status === 'esgotado' ? 'sold-out' : ''}">${renderImage(item.imagem_url, item.nome)}<div class="card-content"><div class="card-topline"><span class="category-tag">${escapeHtml(item.categoria)}</span>${renderStatus(item.status)}</div><h3>${escapeHtml(item.nome)}</h3><p>${escapeHtml(item.descricao || 'Sabor especial da nossa festa.')}</p>${renderAllergens(item)}<div class="card-footer"><strong class="price">${formatMoney(item.preco)}</strong>${orderControls(item)}</div></div>${item.status === 'esgotado' ? '<div class="sold-stamp">ESGOTADO</div>' : ''}</article>`).join('') : emptyState('Ainda não há itens nesta categoria. Volte em breve!');
+  $('#products-list').innerHTML = items.length ? items.map((item) => `<article class="product-card ${item.status === 'esgotado' ? 'sold-out' : ''}">${renderImage(item.imagem_url, item.nome)}<div class="card-content"><div class="card-topline"><span class="category-tag">${escapeHtml(item.categoria)}</span>${renderStatus(item.status)}</div><h3>${escapeHtml(item.nome)}</h3><p>${escapeHtml(item.descricao || 'Sabor especial da nossa festa.')}</p>${renderAllergens(item)}<div class="card-footer"><strong class="price">${formatMoney(item.preco)}</strong>${orderControls(item)}</div>${chipEditar('produtos', item.id)}</div>${item.status === 'esgotado' ? '<div class="sold-stamp">ESGOTADO</div>' : ''}</article>`).join('') : emptyState('Ainda não há itens nesta categoria. Volte em breve!');
 }
 
 function renderActivities() {
   const items = state.produtos.filter((item) => item.categoria === 'brincadeira');
-  $('#activities-list').innerHTML = items.length ? items.map((item) => `<article class="activity-card ${item.status === 'esgotado' ? 'sold-out' : ''}">${renderImage(item.imagem_url, item.nome, 'activity-image')}<div class="activity-body"><div class="card-topline">${renderStatus(item.status)}</div><h3>${escapeHtml(item.nome)}</h3>${item.destaque ? `<span class="highlight-tag">${escapeHtml(item.destaque)}</span>` : ''}<p>${escapeHtml(item.descricao || 'Informações disponíveis na barraca.')}</p><div class="card-footer"><strong class="price"><small>Ficha:</small> ${formatMoney(item.preco)}</strong>${item.regras ? `<button class="secondary-button rules-button" type="button" data-rules="${item.id}" aria-expanded="false">Regras <span aria-hidden="true">›</span></button>` : ''}</div>${item.regras ? `<div class="activity-rules" id="regras-${item.id}" hidden><strong>Como funciona</strong><ul>${String(item.regras).split('\n').filter(Boolean).map((rule) => `<li>${escapeHtml(rule.trim())}</li>`).join('')}</ul></div>` : ''}</div></article>`).join('') : emptyState('As brincadeiras serão divulgadas em breve.');
+  $('#activities-list').innerHTML = items.length ? items.map((item) => `<article class="activity-card ${item.status === 'esgotado' ? 'sold-out' : ''}">${renderImage(item.imagem_url, item.nome, 'activity-image')}<div class="activity-body"><div class="card-topline">${renderStatus(item.status)}</div><h3>${escapeHtml(item.nome)}</h3>${item.destaque ? `<span class="highlight-tag">${escapeHtml(item.destaque)}</span>` : ''}<p>${escapeHtml(item.descricao || 'Informações disponíveis na barraca.')}</p><div class="card-footer"><strong class="price"><small>Ficha:</small> ${formatMoney(item.preco)}</strong>${item.regras ? `<button class="secondary-button rules-button" type="button" data-rules="${item.id}" aria-expanded="false">Regras <span aria-hidden="true">›</span></button>` : ''}${chipEditar('produtos', item.id)}</div>${item.regras ? `<div class="activity-rules" id="regras-${item.id}" hidden><strong>Como funciona</strong><ul>${String(item.regras).split('\n').filter(Boolean).map((rule) => `<li>${escapeHtml(rule.trim())}</li>`).join('')}</ul></div>` : ''}</div></article>`).join('') : emptyState('As brincadeiras serão divulgadas em breve.');
 }
 
 function renderCartela(draw) {
@@ -248,7 +303,7 @@ function renderDrawWhen(draw) {
 function renderDraws() {
   const container = $('#draws-list');
   const sorted = [...state.sorteios].sort((a, b) => (a.ordem_premio ?? 99) - (b.ordem_premio ?? 99));
-  container.innerHTML = sorted.length ? sorted.map((draw) => `<article class="draw-card ${draw.status === 'em_andamento' ? 'is-live' : ''}"><div class="draw-media">${renderImage(draw.imagem_url, `prêmio ${draw.premio}`, 'draw-image')}${draw.ordem_premio ? `<span class="prize-order">${draw.ordem_premio}º Prêmio</span>` : ''}</div><div class="draw-card-content"><div class="card-topline"><span class="draw-type">${escapeHtml(drawTypeLabel[draw.tipo] || draw.tipo)} · ${escapeHtml(draw.identificacao)}</span>${renderStatus(draw.status)}</div><h3>${escapeHtml(draw.premio)}</h3><p class="draw-disclaimer">Imagem meramente ilustrativa</p>${renderCartela(draw)}${renderDrawWhen(draw)}<button class="secondary-button" data-open-draw="${draw.id}" type="button">${draw.status === 'em_andamento' ? 'Acompanhe o sorteio' : 'Ver detalhes'} <span aria-hidden="true">›</span></button></div></article>`).join('') : emptyState('Os sorteios aparecerão aqui assim que forem cadastrados.');
+  container.innerHTML = sorted.length ? sorted.map((draw) => `<article class="draw-card ${draw.status === 'em_andamento' ? 'is-live' : ''}"><div class="draw-media">${renderImage(draw.imagem_url, `prêmio ${draw.premio}`, 'draw-image')}${draw.ordem_premio ? `<span class="prize-order">${draw.ordem_premio}º Prêmio</span>` : ''}</div><div class="draw-card-content"><div class="card-topline"><span class="draw-type">${escapeHtml(drawTypeLabel[draw.tipo] || draw.tipo)} · ${escapeHtml(draw.identificacao)}</span>${renderStatus(draw.status)}</div><h3>${escapeHtml(draw.premio)}</h3><p class="draw-disclaimer">Imagem meramente ilustrativa</p>${renderCartela(draw)}${renderDrawWhen(draw)}<button class="secondary-button" data-open-draw="${draw.id}" type="button">${draw.status === 'em_andamento' ? 'Acompanhe o sorteio' : 'Ver detalhes'} <span aria-hidden="true">›</span></button>${chipEditar('sorteios', draw.id)}</div></article>`).join('') : emptyState('Os sorteios aparecerão aqui assim que forem cadastrados.');
   if (state.selectedDrawId) renderDrawDetail();
   refreshIcons();
 }
@@ -268,7 +323,7 @@ function renderDrawDetail() {
 }
 
 function renderCandidates() {
-  $('#candidates-list').innerHTML = state.candidatas.length ? state.candidatas.map((candidate) => `<article class="candidate-card">${renderImage(candidate.foto_url, candidate.nome, 'candidate-photo')}<div><span class="candidate-crown">♕</span><h3>${escapeHtml(candidate.nome)}</h3>${candidate.idade ? `<span class="candidate-age"><i aria-hidden="true">✦</i>${candidate.idade} anos</span>` : ''}<p>${escapeHtml(candidate.detalhes || 'Representante da escola')}</p><strong>Desfile: ${formatTime(candidate.horario_desfile)}</strong></div></article>`).join('') : emptyState('As candidatas serão apresentadas em breve.');
+  $('#candidates-list').innerHTML = state.candidatas.length ? state.candidatas.map((candidate) => `<article class="candidate-card">${renderImage(candidate.foto_url, candidate.nome, 'candidate-photo')}<div><span class="candidate-crown">♕</span><h3>${escapeHtml(candidate.nome)}</h3>${candidate.idade ? `<span class="candidate-age"><i aria-hidden="true">✦</i>${candidate.idade} anos</span>` : ''}<p>${escapeHtml(candidate.detalhes || 'Representante da escola')}</p><strong>Desfile: ${formatTime(candidate.horario_desfile)}</strong>${chipEditar('candidatas', candidate.id)}</div></article>`).join('') : emptyState('As candidatas serão apresentadas em breve.');
 }
 
 function eventCountdown(item) {
@@ -281,7 +336,7 @@ function eventCountdown(item) {
 }
 function renderSchedule() {
   const sorted = [...state.cronograma].sort((a, b) => String(a.horario_previsto).localeCompare(String(b.horario_previsto)));
-  $('#schedule-list').innerHTML = sorted.length ? sorted.map((item) => `<article class="timeline-item ${item.status === 'realizado' ? 'done' : ''}"><time>${formatTime(item.horario_previsto)}</time><div><div class="timeline-title"><h3>${escapeHtml(item.evento)}</h3>${renderStatus(item.status)}</div><p>${eventCountdown(item)}</p>${item.sorteio_id ? `<button class="inline-link" type="button" data-open-draw="${item.sorteio_id}">Acompanhar sorteio →</button>` : ''}</div></article>`).join('') : emptyState('A programação será publicada em breve.');
+  $('#schedule-list').innerHTML = sorted.length ? sorted.map((item) => `<article class="timeline-item ${item.status === 'realizado' ? 'done' : ''}"><time>${formatTime(item.horario_previsto)}</time><div><div class="timeline-title"><h3>${escapeHtml(item.evento)}</h3>${renderStatus(item.status)}</div><p>${eventCountdown(item)}</p>${item.sorteio_id ? `<button class="inline-link" type="button" data-open-draw="${item.sorteio_id}">Acompanhar sorteio →</button>` : ''}${chipEditar('cronograma', item.id)}</div></article>`).join('') : emptyState('A programação será publicada em breve.');
 }
 function renderAll() { renderHome(); renderProducts(); renderActivities(); renderDraws(); renderCandidates(); renderSchedule(); renderOrder(); renderOrderBar(); refreshIcons(); }
 
@@ -409,6 +464,9 @@ document.addEventListener('click', (event) => {
   if (increase) { const id = increase.dataset.orderInc; setOrderQty(id, orderQty(id) + 1); return; }
   const decrease = event.target.closest('[data-order-dec]');
   if (decrease) { const id = decrease.dataset.orderDec; setOrderQty(id, orderQty(id) - 1); return; }
+  const chip = event.target.closest('[data-admin-edit]');
+  if (chip) { const [table, id] = chip.dataset.adminEdit.split('|'); editorAdmin?.open(table, id); return; }
+  if (event.target.closest('[data-toggle-chips]')) { state.mostrarChips = !state.mostrarChips; renderAdminBar(); renderAll(); return; }
   if (event.target.closest('[data-toggle-vibracao]')) { toggleVibracao(); return; }
   const rules = event.target.closest('[data-rules]');
   if (rules) { const panel = document.getElementById(`regras-${rules.dataset.rules}`); if (panel) { panel.hidden = !panel.hidden; rules.setAttribute('aria-expanded', String(!panel.hidden)); } return; }
@@ -440,6 +498,7 @@ async function iniciar() {
   setInterval(renderSchedule, 30000);
   await loadAll();
   subscribeRealtime();
+  ativarModoOrganizador();
 }
 
 iniciar();
