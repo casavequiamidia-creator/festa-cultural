@@ -13,6 +13,19 @@
         <div class="admin-intro"><div><p class="kicker">Atualização ao vivo</p><h1>Controle da festa</h1></div><span id="admin-email" class="user-chip"></span></div>
         <p id="permission-warning" class="permission-warning" role="alert" hidden></p>
 
+        <section class="admin-card event-bar">
+          <div class="admin-card-title">
+            <div><p class="section-label">Festa selecionada</p><h2>Evento</h2></div>
+            <div class="card-tools"><button class="small-button new-button" type="button" data-new="eventos">+ Nova festa</button></div>
+          </div>
+          <p class="muted card-help">Tudo o que você editar abaixo pertence <b>só</b> à festa escolhida aqui, e aparece na hora para quem estiver no endereço dela.</p>
+          <label for="active-event">Editando agora<select id="active-event"></select></label>
+          <div class="event-bar-foot">
+            <p id="event-link" class="event-link"></p>
+            <button class="small-button" type="button" id="edit-event">Editar dados desta festa</button>
+          </div>
+        </section>
+
         <section class="admin-card alert-control"><div><p class="section-label">Aviso global</p><h2>Comunicado para visitantes</h2></div><form id="alert-form"><label class="sr-only" for="alert-message">Mensagem do aviso</label><input id="alert-message" maxlength="240" placeholder="Ex.: Atenção: dono do veículo ABC-1234..." required /><button class="primary-button" type="submit">Disparar alerta</button></form><p id="alert-feedback" class="feedback" role="status"></p></section>
 
         <section class="admin-card">

@@ -8,7 +8,10 @@ const shortTime = (value) => value ? String(value).slice(0, 5) : '';
 const statusLabel = { disponivel: 'Disponível', poucas_unidades: 'Poucas unidades', esgotado: 'Esgotado', aguardando: 'Aguardando', em_andamento: 'Em andamento', realizado: 'Realizado', pendente: 'Pendente' };
 // `organizador` guarda o resultado de public.sou_organizador(): true, false, ou
 // null quando a função ainda não existe no banco (migration não aplicada).
-const state = { produtos: [], sorteios: [], cronograma: [], candidatas: [], editor: null, organizador: null };
+const EVENTO_KEY = 'festa-cultural:admin-evento';
+// Tabelas cujo conteúdo pertence a uma festa específica.
+const ESCOPADAS = new Set(['produtos', 'sorteios', 'cronograma', 'candidatas', 'avisos']);
+const state = { eventos: [], eventoId: null, produtos: [], sorteios: [], cronograma: [], candidatas: [], editor: null, organizador: null };
 
 function feedback(selector, message, isError = false) { const element = $(selector); if (!element) return; element.textContent = message; element.classList.toggle('error', isError); }
 function refreshIcons() { window.lucide?.createIcons(); }
@@ -34,6 +37,11 @@ function describeError(error) {
  * nada volta com lista vazia e vira erro de verdade na tela.
  */
 async function write(operation, table, { values, id } = {}) {
+  // Sem isso um item novo nasceria órfão e não apareceria em festa nenhuma.
+  if (operation === 'insert' && ESCOPADAS.has(table)) {
+    if (!state.eventoId) throw new Error('Selecione uma festa antes de cadastrar. Se ainda não existe nenhuma, use "+ Nova festa".');
+    values = { ...values, evento_id: state.eventoId };
+  }
   const base = supabase.from(table);
   const query = operation === 'insert' ? base.insert(values)
     : operation === 'delete' ? base.delete().eq('id', id)
@@ -107,6 +115,23 @@ const FORMS = {
       { name: 'horario_desfile', label: 'Horário do desfile', type: 'time' },
     ],
   },
+  eventos: {
+    titulo: 'festa',
+    padrao: { ativo: 'true' },
+    campos: [
+      { name: 'slug', label: 'Endereço da festa', type: 'text', required: true, maxlength: 40, hint: 'Vira a URL pública: /casavequia. Só minúsculas, números e hífen.' },
+      { name: 'nome', label: 'Nome da festa', type: 'text', required: true, maxlength: 80, hint: 'Ex.: Festa Cultural 2026' },
+      { name: 'escola', label: 'Escola', type: 'text', maxlength: 120, hint: 'Aparece embaixo do logo, para não confundir as festas.' },
+      { name: 'data_evento', label: 'Data da festa', type: 'date' },
+      { name: 'logo_url', label: 'Logo desta festa', type: 'image' },
+      { name: 'pix_chave', label: 'Chave PIX', type: 'text', maxlength: 140 },
+      { name: 'pix_favorecido', label: 'Favorecido do PIX', type: 'text', maxlength: 140 },
+      { name: 'pix_banco', label: 'Instituição', type: 'text', maxlength: 120 },
+      { name: 'pix_qr_url', label: 'QR Code do PIX', type: 'image' },
+      { name: 'whatsapp', label: 'WhatsApp da organização', type: 'text', maxlength: 20, hint: 'Só números, com DDI e DDD. Ex.: 5568999999999' },
+      { name: 'ativo', label: 'Aparece na lista de festas', type: 'boolean' },
+    ],
+  },
   cronograma: {
     titulo: 'evento do cronograma',
     padrao: { status: 'pendente' },
@@ -145,6 +170,10 @@ function fieldHtml(field, item) {
       <p class="upload-feedback" data-upload-feedback="${field.name}" role="status"></p>
     </div>`;
   }
+  if (field.type === 'boolean') {
+    const marcado = value === 'false' ? 'false' : 'true';
+    return `<label for="${id}">${escapeHtml(field.label)}<select id="${id}" name="${field.name}"><option value="true"${marcado === 'true' ? ' selected' : ''}>Sim</option><option value="false"${marcado === 'false' ? ' selected' : ''}>Não</option></select>${hint}</label>`;
+  }
   if (field.type === 'select') {
     const options = fieldOptions(field).map(([optionValue, optionLabel]) => `<option value="${escapeHtml(optionValue)}"${String(optionValue) === value ? ' selected' : ''}>${escapeHtml(optionLabel)}</option>`).join('');
     return `<label for="${id}">${escapeHtml(field.label)}<select id="${id}" name="${field.name}"${required}>${options}</select>${hint}</label>`;
@@ -177,7 +206,8 @@ function collectValues(table) {
     const element = document.getElementById(`f-${field.name}`);
     if (!element) return;
     const raw = String(element.value ?? '').trim();
-    if (raw === '') { values[field.name] = field.emptyAs !== undefined ? field.emptyAs : null; return; }
+    if (raw === '') { values[field.name] = field.type === 'boolean' ? true : (field.emptyAs !== undefined ? field.emptyAs : null); return; }
+    if (field.type === 'boolean') { values[field.name] = raw === 'true'; return; }
     if (field.type === 'number') { const parsed = Number(raw); values[field.name] = Number.isFinite(parsed) ? parsed : null; return; }
     // sorteio_id é um select de texto, mas a coluna é numérica.
     values[field.name] = field.name === 'sorteio_id' ? Number(raw) : raw;
@@ -198,8 +228,9 @@ async function submitEditor(event) {
   const save = $('#editor-save');
   save.disabled = true;
   feedback('#editor-feedback', 'Salvando...');
+  let gravado;
   try {
-    await write(id ? 'update' : 'insert', table, { values, id });
+    gravado = await write(id ? 'update' : 'insert', table, { values, id });
   } catch (error) {
     feedback('#editor-feedback', error.message, true);
     return;
@@ -207,6 +238,12 @@ async function submitEditor(event) {
     save.disabled = false;
   }
   closeEditor();
+  if (table === 'eventos') {
+    // Uma festa recém-criada já entra selecionada, senão o organizador
+    // cadastraria o cardápio dela dentro da festa anterior.
+    if (!id && gravado?.[0]?.id) state.eventoId = gravado[0].id;
+    await loadEventos();
+  }
   await loadData();
 }
 
@@ -221,6 +258,7 @@ async function deleteCurrent() {
     return;
   }
   closeEditor();
+  if (table === 'eventos') { state.eventoId = null; await loadEventos(); }
   await loadData();
 }
 
@@ -307,15 +345,53 @@ function renderDrawConsole() {
 
 function renderAll() { renderProducts(); renderSelect(); renderDrawList(); renderCandidates(); renderSchedule(); refreshIcons(); }
 
+async function loadEventos() {
+  const { data, error } = await supabase.from('eventos').select('*').order('nome');
+  if (error) { feedback('#login-feedback', describeError(error), true); return; }
+  state.eventos = data || [];
+  let guardado = null;
+  try { guardado = localStorage.getItem(EVENTO_KEY); } catch { /* sem localStorage */ }
+  const valido = state.eventos.some((evento) => String(evento.id) === String(state.eventoId));
+  if (!valido) {
+    const salvo = state.eventos.find((evento) => String(evento.id) === String(guardado));
+    state.eventoId = (salvo || state.eventos[0])?.id ?? null;
+  }
+  renderEventos();
+}
+
+function selecionarEvento(id) {
+  state.eventoId = id ? Number(id) : null;
+  try { localStorage.setItem(EVENTO_KEY, String(state.eventoId ?? '')); } catch { /* sem localStorage */ }
+  renderEventos();
+  loadData();
+}
+
+function eventoAtual() { return state.eventos.find((evento) => String(evento.id) === String(state.eventoId)) || null; }
+
+function renderEventos() {
+  const select = $('#active-event');
+  select.innerHTML = state.eventos.length
+    ? state.eventos.map((evento) => `<option value="${evento.id}"${String(evento.id) === String(state.eventoId) ? ' selected' : ''}>${escapeHtml(evento.escola || evento.nome)} — /${escapeHtml(evento.slug)}${evento.ativo ? '' : ' (oculta)'}</option>`).join('')
+    : '<option value="">Nenhuma festa cadastrada</option>';
+  const atual = eventoAtual();
+  const link = $('#event-link');
+  $('#edit-event').hidden = !atual;
+  if (!atual) { link.textContent = 'Crie a primeira festa em "+ Nova festa".'; return; }
+  const url = `${location.origin}/${atual.slug}`;
+  link.innerHTML = `Endereço do visitante: <a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(url)}</a>`;
+}
+
 async function loadData() {
+  if (!state.eventoId) { state.produtos = []; state.sorteios = []; state.cronograma = []; state.candidatas = []; renderAll(); return; }
+  const evento = state.eventoId;
   const [produtos, sorteios, cronograma, candidatas] = await Promise.all([
-    supabase.from('produtos').select('*').order('nome'),
-    supabase.from('sorteios').select('*').order('id', { ascending: false }),
-    supabase.from('cronograma').select('*').order('horario_previsto'),
-    supabase.from('candidatas').select('*').order('nome'),
+    supabase.from('produtos').select('*').eq('evento_id', evento).order('nome'),
+    supabase.from('sorteios').select('*').eq('evento_id', evento).order('id', { ascending: false }),
+    supabase.from('cronograma').select('*').eq('evento_id', evento).order('horario_previsto'),
+    supabase.from('candidatas').select('*').eq('evento_id', evento).order('nome'),
   ]);
   const error = [produtos, sorteios, cronograma, candidatas].find((result) => result.error)?.error;
-  if (error) { feedback('#login-feedback', error.message, true); return; }
+  if (error) { feedback('#login-feedback', describeError(error), true); return; }
   state.produtos = produtos.data || []; state.sorteios = sorteios.data || []; state.cronograma = cronograma.data || []; state.candidatas = candidatas.data || [];
   renderAll();
 }
@@ -327,6 +403,7 @@ async function subscribe() {
   // no socket quando o canal entra, senão ele avalia as policies como anônimo.
   await supabase.realtime.setAuth();
   supabase.channel('admin-tabelas')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'eventos' }, loadEventos)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'produtos' }, loadData)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'sorteios' }, loadData)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'cronograma' }, loadData)
@@ -334,11 +411,13 @@ async function subscribe() {
     .subscribe();
 }
 
-async function showAdmin(session) { $('#login-panel').hidden = true; $('#admin-panel').hidden = false; $('#sign-out').hidden = false; $('#admin-email').textContent = session.user.email; await checkOrganizer(); await loadData(); await subscribe(); }
+async function showAdmin(session) { $('#login-panel').hidden = true; $('#admin-panel').hidden = false; $('#sign-out').hidden = false; $('#admin-email').textContent = session.user.email; await checkOrganizer(); await loadEventos(); await loadData(); await subscribe(); }
 
 $('#login-form').addEventListener('submit', async (event) => { event.preventDefault(); feedback('#login-feedback', 'Entrando...'); const { data, error } = await supabase.auth.signInWithPassword({ email: $('#email').value, password: $('#password').value }); if (error) { feedback('#login-feedback', error.message, true); return; } showAdmin(data.session); });
 $('#sign-out').addEventListener('click', async () => { await supabase.auth.signOut(); window.location.reload(); });
 $('#active-draw').addEventListener('change', renderDrawConsole);
+$('#active-event').addEventListener('change', (event) => selecionarEvento(event.target.value));
+$('#edit-event').addEventListener('click', () => { if (state.eventoId) openEditor('eventos', state.eventoId); });
 $('#editor-form').addEventListener('submit', submitEditor);
 $('#editor-close').addEventListener('click', closeEditor);
 $('#editor-delete').addEventListener('click', deleteCurrent);

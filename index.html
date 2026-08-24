@@ -13,17 +13,29 @@
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
+    <div id="event-picker" class="event-picker" hidden>
+      <div class="event-picker-inner">
+        <picture>
+          <source srcset="./assets/logo.webp" type="image/webp" />
+          <img class="picker-logo" src="./assets/logo.png" alt="Festa Cultural" width="720" height="285" />
+        </picture>
+        <h1 id="picker-title">Escolha a sua festa</h1>
+        <p id="picker-lead">Cada escola tem a sua própria página. Toque na sua para ver o cardápio, os sorteios e a programação.</p>
+        <div id="event-list" class="event-list" aria-live="polite"></div>
+      </div>
+    </div>
     <div class="site-shell">
       <button class="menu-toggle" type="button" aria-label="Abrir menu" aria-expanded="false">
         <i data-lucide="menu" aria-hidden="true"></i>
       </button>
       <aside class="sidebar" aria-label="Navegação principal">
-        <a class="brand" href="#inicio" data-route="inicio">
-          <picture>
+        <a class="brand" id="brand-link" href="#inicio" data-route="inicio">
+          <picture id="brand-picture">
             <source srcset="./assets/logo.webp" type="image/webp" />
             <img class="brand-logo" src="./assets/logo.png" alt="Festa Cultural — Arraial digital da escola. Ir para o início." width="720" height="285" fetchpriority="high" />
           </picture>
         </a>
+        <p id="event-tag" class="event-tag" hidden></p>
         <nav class="nav-links" aria-label="Seções do evento">
           <button class="nav-link active" type="button" data-route="inicio"><i data-lucide="house"></i><span>Início</span></button>
           <button class="nav-link" type="button" data-route="cardapio"><i data-lucide="utensils-crossed"></i><span>Cardápio</span></button>

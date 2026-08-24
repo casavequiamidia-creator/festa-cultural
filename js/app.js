@@ -2,7 +2,7 @@ import { EVENT_CONFIG, supabase } from './supabase-config.js';
 
 // `pedido` é a Lista de pedido do visitante: um mapa { idDoProduto: quantidade }
 // guardado apenas no localStorage do próprio celular. Nada é enviado ao banco.
-const state = { produtos: [], sorteios: [], cronograma: [], candidatas: [], category: 'todos', selectedDrawId: null, route: 'inicio', pedido: {}, vibrar: true, conexao: 'conectando', canal: null, ultimoAvisoId: 0, tentativas: 0 };
+const state = { produtos: [], sorteios: [], cronograma: [], candidatas: [], category: 'todos', selectedDrawId: null, route: 'inicio', pedido: {}, vibrar: true, evento: null, conexao: 'conectando', canal: null, ultimoAvisoId: 0, tentativas: 0 };
 // Rede de festa cai e volta o tempo todo, e ha operadora que bloqueia WebSocket.
 // Por isso o site nunca depende so do Realtime: ele tambem recarrega sozinho.
 const POLL_AO_VIVO = 45000;
@@ -15,7 +15,9 @@ let primeiraCarga = true;
 let pollTimer = null;
 let reconnectTimer = null;
 let recargaTimer = null;
-const ORDER_KEY = 'festa-cultural:lista-de-pedido';
+// A lista de pedido é guardada por evento: quem visita duas festas no mesmo
+// celular não pode ver a lista de uma aparecendo na outra.
+let ORDER_KEY = 'festa-cultural:lista-de-pedido';
 const VIBRACAO_KEY = 'festa-cultural:vibrar';
 // A Vibration API nao existe no Safari do iPhone. Onde nao ha, o aviso vira
 // so o destaque visual do numero, e o controle de liga/desliga some.
@@ -33,6 +35,42 @@ const emptyState = (message) => `<div class="empty-state"><span>✦</span><p>${e
 const statusLabel = { disponivel: 'Disponível', poucas_unidades: 'Restam poucas unidades!', esgotado: 'Esgotado', aguardando: 'Aguardando', em_andamento: 'Em andamento', realizado: 'Realizado', pendente: 'Pendente' };
 const drawTypeLabel = { bingo: 'Bingo', rifa: 'Rifa', leilao: 'Leilão' };
 const cartelaLabel = { bingo: 'Cartela do bingo', rifa: 'Número da rifa', leilao: 'Leilão no palco' };
+
+/* ------------------------------------------------------------------ *
+ * Qual festa é esta? O caminho da URL decide: /casavequia, /raimundo-herminio.
+ * ------------------------------------------------------------------ */
+function slugDaUrl() {
+  // `?evento=` existe para rodar o site em servidor local, que não tem o
+  // rewrite da Vercel. Em produção quem manda é o caminho.
+  const daQuery = new URLSearchParams(location.search).get('evento');
+  const doCaminho = location.pathname.split('/').filter(Boolean)[0] || '';
+  const escolhido = (daQuery || doCaminho).toLowerCase();
+  return /^[a-z0-9][a-z0-9-]{1,40}$/.test(escolhido) ? escolhido : '';
+}
+
+async function mostrarSeletor(titulo, texto) {
+  document.querySelector('.site-shell').hidden = true;
+  const picker = $('#event-picker');
+  picker.hidden = false;
+  $('#picker-title').textContent = titulo;
+  $('#picker-lead').textContent = texto;
+  const { data, error } = await supabase.from('eventos').select('slug, nome, escola, data_evento').eq('ativo', true).order('nome');
+  const lista = $('#event-list');
+  if (error) { lista.innerHTML = emptyState('Não foi possível carregar as festas agora. Tente de novo em instantes.'); return; }
+  lista.innerHTML = data?.length
+    ? data.map((evento) => `<a class="event-option" href="/${escapeHtml(evento.slug)}"><span><strong>${escapeHtml(evento.escola || evento.nome)}</strong><small>${escapeHtml(evento.nome)}${evento.data_evento ? ` \u00b7 ${escapeHtml(formatDate(evento.data_evento))}` : ''}</small></span><i aria-hidden="true">\u203a</i></a>`).join('')
+    : emptyState('Nenhuma festa publicada ainda.');
+}
+
+// Troca o logo e o nome da escola pelos desta festa.
+function aplicarMarca(evento) {
+  if (evento.logo_url) {
+    $('#brand-picture').outerHTML = `<img class="brand-logo" src="${escapeHtml(evento.logo_url)}" alt="${escapeHtml(evento.nome)} \u2014 ir para o início" />`;
+  }
+  const tag = $('#event-tag');
+  if (evento.escola) { tag.textContent = evento.escola; tag.hidden = false; }
+  document.title = `${evento.nome}${evento.escola ? ` | ${evento.escola}` : ''}`;
+}
 
 function setNetwork(message, tone = '') { const element = $('#network-status'); element.textContent = message; element.className = `network-status ${tone}`; }
 function refreshIcons() { window.lucide?.createIcons(); }
@@ -275,15 +313,19 @@ function handleAviso(aviso) {
 
 // A tabela de avisos e nova: se ela ainda nao existe, o site continua normal.
 async function loadAvisos() {
-  const { data, error } = await supabase.from('avisos').select('*').order('id', { ascending: false }).limit(1);
+  const { data, error } = await supabase.from('avisos').select('*').eq('evento_id', state.evento.id).order('id', { ascending: false }).limit(1);
   if (error) { console.warn('Avisos indisponíveis:', error.message); return; }
   handleAviso(data?.[0]);
 }
 
 async function loadAll() {
   if (state.conexao === 'conectando') setNetwork('Atualizando informações...', 'loading');
+  const evento = state.evento.id;
   const [produtos, sorteios, cronograma, candidatas] = await Promise.all([
-    supabase.from('produtos').select('*').order('nome'), supabase.from('sorteios').select('*').order('id', { ascending: false }), supabase.from('cronograma').select('*').order('horario_previsto'), supabase.from('candidatas').select('*').order('nome'),
+    supabase.from('produtos').select('*').eq('evento_id', evento).order('nome'),
+    supabase.from('sorteios').select('*').eq('evento_id', evento).order('id', { ascending: false }),
+    supabase.from('cronograma').select('*').eq('evento_id', evento).order('horario_previsto'),
+    supabase.from('candidatas').select('*').eq('evento_id', evento).order('nome'),
   ]);
   const errors = [produtos, sorteios, cronograma, candidatas].map((result) => result.error).filter(Boolean);
   if (errors.length) { setNetwork('Não foi possível atualizar agora. Tentando de novo...', 'offline'); console.error(errors); return; }
@@ -297,7 +339,29 @@ async function loadAll() {
 }
 
 function showPublicAlert(message) { const alert = $('#public-alert'); alert.textContent = `📣 ${message}`; alert.hidden = false; clearTimeout(showPublicAlert.timer); showPublicAlert.timer = setTimeout(() => { alert.hidden = true; }, 25000); }
-function configureStaticInfo() { $('#pix-key').textContent = EVENT_CONFIG.pixKey; $('#pix-holder').textContent = EVENT_CONFIG.pixHolder; $('#pix-bank').textContent = EVENT_CONFIG.pixBank; const help = $('#help-button'); if (EVENT_CONFIG.whatsappNumber) help.href = `https://wa.me/${EVENT_CONFIG.whatsappNumber.replace(/\D/g, '')}`; else help.hidden = true; const qr = $('.qr-placeholder'); if (EVENT_CONFIG.pixQrImage) qr.innerHTML = `<img src="${escapeHtml(EVENT_CONFIG.pixQrImage)}" alt="QR Code PIX" />`; }
+// Cada festa tem PIX e WhatsApp próprios; EVENT_CONFIG só vale de reserva
+// para um evento ainda sem esses campos preenchidos.
+function pixDoEvento() {
+  const evento = state.evento || {};
+  return {
+    chave: evento.pix_chave || EVENT_CONFIG.pixKey,
+    favorecido: evento.pix_favorecido || EVENT_CONFIG.pixHolder,
+    banco: evento.pix_banco || EVENT_CONFIG.pixBank,
+    qr: evento.pix_qr_url || EVENT_CONFIG.pixQrImage,
+    whatsapp: evento.whatsapp || EVENT_CONFIG.whatsappNumber,
+  };
+}
+
+function configureStaticInfo() {
+  const pix = pixDoEvento();
+  $('#pix-key').textContent = pix.chave;
+  $('#pix-holder').textContent = pix.favorecido;
+  $('#pix-bank').textContent = pix.banco;
+  const help = $('#help-button');
+  if (pix.whatsapp) help.href = `https://wa.me/${String(pix.whatsapp).replace(/\D/g, '')}`; else help.hidden = true;
+  const qr = $('.qr-placeholder');
+  if (pix.qr) qr.innerHTML = `<img src="${escapeHtml(pix.qr)}" alt="QR Code PIX" />`;
+}
 
 function agendarReconexao() {
   clearTimeout(reconnectTimer);
@@ -312,9 +376,12 @@ async function subscribeRealtime() {
   await supabase.realtime.setAuth();
   if (state.canal) { await supabase.removeChannel(state.canal); state.canal = null; }
   // Um canal so para tudo: menos juncao para dar errado em rede ruim.
-  const canal = supabase.channel('festa-ao-vivo');
-  ['produtos', 'sorteios', 'cronograma', 'candidatas'].forEach((table) => canal.on('postgres_changes', { event: '*', schema: 'public', table }, agendarRecarga));
-  canal.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'avisos' }, (payload) => handleAviso(payload.new));
+  // O filtro por evento_id é o que impede o visitante de uma festa receber
+  // atualização da outra.
+  const filtro = `evento_id=eq.${state.evento.id}`;
+  const canal = supabase.channel(`festa-${state.evento.slug}`);
+  ['produtos', 'sorteios', 'cronograma', 'candidatas'].forEach((table) => canal.on('postgres_changes', { event: '*', schema: 'public', table, filter: filtro }, agendarRecarga));
+  canal.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'avisos', filter: filtro }, (payload) => handleAviso(payload.new));
   canal.subscribe((status) => {
     if (status === 'SUBSCRIBED') { state.conexao = 'ao-vivo'; state.tentativas = 0; clearTimeout(reconnectTimer); loadAll(); }
     else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') { state.conexao = 'reconectando'; agendarReconexao(); }
@@ -350,9 +417,29 @@ document.addEventListener('click', (event) => {
 });
 $$('.filter').forEach((button) => button.addEventListener('click', () => { state.category = button.dataset.category; $$('.filter').forEach((item) => item.classList.toggle('active', item === button)); renderProducts(); }));
 $('#clear-order').addEventListener('click', () => { if (!Object.keys(state.pedido).length || !window.confirm('Limpar toda a sua lista de pedido?')) return; state.pedido = {}; saveOrder(); renderProducts(); renderOrder(); renderOrderBar(); });
-$('#copy-pix').addEventListener('click', async () => { try { await navigator.clipboard.writeText(EVENT_CONFIG.pixKey); $('#pix-feedback').textContent = 'Chave copiada! Abra o app do seu banco.'; } catch { $('#pix-feedback').textContent = 'Não foi possível copiar automaticamente. Selecione a chave acima.'; } });
+$('#copy-pix').addEventListener('click', async () => { try { await navigator.clipboard.writeText(pixDoEvento().chave); $('#pix-feedback').textContent = 'Chave copiada! Abra o app do seu banco.'; } catch { $('#pix-feedback').textContent = 'Não foi possível copiar automaticamente. Selecione a chave acima.'; } });
 
-state.pedido = loadOrder();
-state.vibrar = loadVibracao();
-renderOrder(); renderOrderBar();
-setInterval(renderSchedule, 30000); configureStaticInfo(); loadAll(); subscribeRealtime();
+async function iniciar() {
+  state.vibrar = loadVibracao();
+  const slug = slugDaUrl();
+  if (!slug) {
+    await mostrarSeletor('Escolha a sua festa', 'Cada escola tem a sua própria página. Toque na sua para ver o cardápio, os sorteios e a programação.');
+    return;
+  }
+  const { data: evento, error } = await supabase.from('eventos').select('*').eq('slug', slug).maybeSingle();
+  if (error || !evento) {
+    await mostrarSeletor('Festa não encontrada', `Não existe festa no endereço /${slug}. Veja as que estão no ar:`);
+    return;
+  }
+  state.evento = evento;
+  ORDER_KEY = `festa-cultural:lista-de-pedido:${evento.slug}`;
+  state.pedido = loadOrder();
+  aplicarMarca(evento);
+  configureStaticInfo();
+  renderOrder(); renderOrderBar();
+  setInterval(renderSchedule, 30000);
+  await loadAll();
+  subscribeRealtime();
+}
+
+iniciar();

@@ -921,3 +921,65 @@ body.menu-open .order-bar { display: none; }
   .live-badge i, .numero-novo { animation: none; }
   .numero-novo { border-color: var(--orange-bright); }
 }
+
+/* ==========================================================================
+   Várias festas no mesmo site: tela de escolha e identificação do evento.
+   ========================================================================== */
+.event-picker {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 32px 20px 48px;
+}
+.event-picker[hidden] { display: none; }
+.event-picker-inner { max-width: 560px; text-align: center; width: 100%; }
+.picker-logo { display: block; height: auto; margin: 0 auto 26px; width: min(300px, 62vw); }
+.event-picker h1 { font-size: clamp(2.1rem, 7vw, 3rem); line-height: 1.05; margin: 0 0 14px; }
+.event-picker>div>p { color: #cdcbcb; font-size: 1.02rem; line-height: 1.6; margin: 0 auto 28px; max-width: 430px; }
+
+.event-list { display: grid; gap: 12px; text-align: left; }
+.event-option {
+  align-items: center;
+  background: linear-gradient(108deg, #181818, #111112 72%);
+  border: 1px solid #303031;
+  border-radius: 18px;
+  color: var(--text);
+  display: flex;
+  gap: 16px;
+  min-height: 88px;
+  padding: 18px 22px;
+  text-decoration: none;
+  transition: .2s ease;
+}
+.event-option:hover { border-color: var(--orange); transform: translateY(-2px); }
+.event-option span { display: grid; gap: 5px; }
+.event-option strong { font-size: 1.1rem; }
+.event-option small { color: #b8b6b6; font-size: .92rem; }
+.event-option i { color: var(--orange-bright); font-size: 2.4rem; font-style: normal; line-height: 1; margin-left: auto; }
+
+/* Nome da escola embaixo do logo, para ninguém confundir as festas. */
+.event-tag {
+  color: var(--gold);
+  font-size: .82rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  margin: 9px 0 0;
+  text-align: center;
+  text-transform: uppercase;
+}
+.event-tag[hidden] { display: none; }
+
+/* Barra de seleção da festa no painel. */
+.event-bar { border-color: rgba(236, 117, 45, .45); }
+.event-bar select { font-size: 1rem; min-height: 52px; }
+.event-bar-foot { align-items: center; display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; margin-top: 14px; }
+.event-link { color: var(--muted); font-size: .86rem; margin: 0; overflow-wrap: anywhere; }
+.event-link a { color: var(--orange-bright); font-weight: 700; }
+#edit-event[hidden] { display: none; }
+
+@media (max-width: 780px) {
+  .event-picker { padding: 24px 16px 40px; }
+  .event-option { min-height: 78px; padding: 15px 17px; }
+  .event-bar-foot { align-items: flex-start; flex-direction: column; }
+}
