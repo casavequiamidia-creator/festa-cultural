@@ -40,6 +40,16 @@ function renderPermissionWarning() {
 
 async function checkOrganizer() { state.organizador = await souOrganizador(); renderPermissionWarning(); }
 
+// Erros de carregamento iam para #login-feedback, que fica dentro do painel de
+// login escondido — depois de entrar, ninguem via. Agora usam a tarja do topo.
+function mostrarProblema(mensagem) {
+  const banner = $('#permission-warning');
+  if (!banner) return;
+  banner.hidden = false;
+  banner.textContent = mensagem;
+}
+function limparProblema() { if (state.organizador !== false) renderPermissionWarning(); }
+
 /* ------------------------------------------------------------------ *
  * Listas do painel
  * ------------------------------------------------------------------ */
@@ -99,7 +109,8 @@ function renderAll() { renderProducts(); renderSelect(); renderDrawList(); rende
  * ------------------------------------------------------------------ */
 async function loadEventos() {
   const { data, error } = await supabase.from('eventos').select('*').order('nome');
-  if (error) { feedback('#login-feedback', describeError(error), true); return; }
+  if (error) { mostrarProblema(`Não foi possível carregar as festas. ${describeError(error)}`); return; }
+  limparProblema();
   state.eventos = data || [];
   let guardado = null;
   try { guardado = localStorage.getItem(EVENTO_KEY); } catch { /* sem localStorage */ }
@@ -145,7 +156,8 @@ async function loadData() {
     supabase.from('candidatas').select('*').eq('evento_id', evento).order('nome'),
   ]);
   const error = [produtos, sorteios, cronograma, candidatas].find((result) => result.error)?.error;
-  if (error) { feedback('#login-feedback', describeError(error), true); return; }
+  if (error) { mostrarProblema(`Não foi possível carregar os dados desta festa. ${describeError(error)}`); return; }
+  limparProblema();
   state.produtos = produtos.data || []; state.sorteios = sorteios.data || []; state.cronograma = cronograma.data || []; state.candidatas = candidatas.data || [];
   renderAll();
 }
