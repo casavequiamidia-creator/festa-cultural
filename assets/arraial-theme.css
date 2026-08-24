@@ -729,3 +729,55 @@ body.menu-open .order-bar { display: none; }
   padding: 15px 17px;
 }
 .permission-warning[hidden] { display: none; }
+
+/* ==========================================================================
+   Logotipo do cabeçalho. O arquivo já traz "Festa Cultural" e o subtítulo,
+   então ele substitui o antigo bloco de ícone + texto, que duplicaria a marca.
+   ========================================================================== */
+/* O styles.css escondia .brand abaixo de 780px, de quando a sidebar virava
+   barra inferior. Neste tema ela é o cabeçalho, então a marca volta a aparecer
+   no celular — que é onde o site é realmente usado. */
+.brand { display: flex; }
+
+/* No mobile o styles.css aplicava backdrop-filter na .sidebar. Isso faz dela o
+   bloco de contenção de qualquer filho `position: fixed`, e a .nav-links ia
+   parar logo abaixo do cabeçalho em vez do rodapé da tela — cobrindo o logo e
+   flutuando por cima do conteúdo. Este tema não usa o desfoque ali. */
+.sidebar { backdrop-filter: none; }
+
+.brand-logo {
+  display: block;
+  height: auto;
+  width: min(340px, 46vw);
+}
+.brand picture { display: block; line-height: 0; }
+
+/* O bloco de texto antigo sai de cena se algum HTML ainda o trouxer. */
+.brand .brand-mark, .brand .brand-copy { display: none; }
+
+.admin-brand { align-items: center; display: flex; gap: 14px; }
+.admin-brand .brand-logo { width: min(190px, 40vw); }
+/* Especificidade acima de `.brand small { display: none }`, lá em cima. */
+.brand .admin-brand-tag {
+  border-left: 1px solid var(--line);
+  display: block;
+  color: #bbb8b5;
+  font-size: .71rem;
+  font-weight: 600;
+  letter-spacing: .055em;
+  line-height: 1.35;
+  padding-left: 14px;
+  text-transform: uppercase;
+}
+
+@media (max-width: 780px) {
+  /* Precisa caber ao lado do botão de menu, que fica fixo no canto esquerdo. */
+  .brand-logo { width: min(232px, 54vw); }
+  .admin-brand { gap: 10px; }
+  .admin-brand .brand-logo { width: min(150px, 38vw); }
+  .brand .admin-brand-tag { font-size: .62rem; padding-left: 10px; }
+}
+
+@media (max-width: 420px) {
+  .brand-logo { width: min(188px, 55vw); }
+}
