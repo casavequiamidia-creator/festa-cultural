@@ -6,10 +6,58 @@ const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => (
 const formatMoney = (value) => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const shortTime = (value) => value ? String(value).slice(0, 5) : '';
 const statusLabel = { disponivel: 'Disponível', poucas_unidades: 'Poucas unidades', esgotado: 'Esgotado', aguardando: 'Aguardando', em_andamento: 'Em andamento', realizado: 'Realizado', pendente: 'Pendente' };
-const state = { produtos: [], sorteios: [], cronograma: [], candidatas: [], alertChannel: null, alertStatus: 'CONECTANDO', editor: null };
+// `organizador` guarda o resultado de public.sou_organizador(): true, false, ou
+// null quando a função ainda não existe no banco (migration não aplicada).
+const state = { produtos: [], sorteios: [], cronograma: [], candidatas: [], editor: null, organizador: null };
 
 function feedback(selector, message, isError = false) { const element = $(selector); if (!element) return; element.textContent = message; element.classList.toggle('error', isError); }
 function refreshIcons() { window.lucide?.createIcons(); }
+
+const SEM_PERMISSAO = 'Nada foi gravado. Sua conta está fora da allowlist de organizadores — peça para incluírem seu usuário na tabela private.organizadores pelo SQL Editor.';
+const SEM_LINHA = 'Nada foi gravado: este registro não existe mais. Alguém pode tê-lo excluído. Atualize a página.';
+
+// Traduz os erros mais comuns do PostgREST para algo acionável no meio da festa.
+function describeError(error) {
+  const code = error?.code || '';
+  if (code === 'PGRST204' || code === '42703') return `${error.message} — o banco está sem as migrations mais recentes. Rode os arquivos de supabase/migrations no SQL Editor.`;
+  if (code === '42P01' || code === 'PGRST205') return `${error.message} — tabela ausente. Rode as migrations no SQL Editor.`;
+  if (code === '42501' || code === 'PGRST301') return SEM_PERMISSAO;
+  return error?.message || 'Erro desconhecido.';
+}
+
+/*
+ * Toda escrita passa por aqui.
+ *
+ * Um UPDATE ou DELETE barrado pelo RLS casa ZERO linhas e o PostgREST responde
+ * 204 sem erro nenhum — foi exatamente por isso que o painel dizia "salvo" com
+ * o banco intacto. Pedindo `.select('id')` de volta, uma escrita que não gravou
+ * nada volta com lista vazia e vira erro de verdade na tela.
+ */
+async function write(operation, table, { values, id } = {}) {
+  const base = supabase.from(table);
+  const query = operation === 'insert' ? base.insert(values)
+    : operation === 'delete' ? base.delete().eq('id', id)
+      : base.update(values).eq('id', id);
+  const { data, error } = await query.select('id');
+  if (error) throw new Error(describeError(error));
+  if (!data?.length) throw new Error(state.organizador === false ? SEM_PERMISSAO : SEM_LINHA);
+  return data;
+}
+
+function renderPermissionWarning() {
+  const banner = $('#permission-warning');
+  if (!banner) return;
+  banner.hidden = state.organizador !== false;
+  if (state.organizador === false) banner.textContent = `Atenção: esta conta entrou, mas não pode gravar nada. ${SEM_PERMISSAO}`;
+}
+
+async function checkOrganizer() {
+  const { data, error } = await supabase.rpc('sou_organizador');
+  // Função ausente = banco desatualizado. Não bloqueia o painel; as escritas
+  // continuam sendo conferidas uma a uma.
+  state.organizador = error ? null : data === true;
+  renderPermissionWarning();
+}
 
 /* ------------------------------------------------------------------ *
  * Formulários: uma descrição por tabela gera a tela de edição inteira.
@@ -150,9 +198,14 @@ async function submitEditor(event) {
   const save = $('#editor-save');
   save.disabled = true;
   feedback('#editor-feedback', 'Salvando...');
-  const { error } = id ? await supabase.from(table).update(values).eq('id', id) : await supabase.from(table).insert(values);
-  save.disabled = false;
-  if (error) { feedback('#editor-feedback', error.message, true); return; }
+  try {
+    await write(id ? 'update' : 'insert', table, { values, id });
+  } catch (error) {
+    feedback('#editor-feedback', error.message, true);
+    return;
+  } finally {
+    save.disabled = false;
+  }
   closeEditor();
   await loadData();
 }
@@ -161,8 +214,12 @@ async function deleteCurrent() {
   if (!state.editor?.id) return;
   const { table, id } = state.editor;
   if (!window.confirm('Excluir este registro? Essa ação não pode ser desfeita.')) return;
-  const { error } = await supabase.from(table).delete().eq('id', id);
-  if (error) { feedback('#editor-feedback', error.message, true); return; }
+  try {
+    await write('delete', table, { id });
+  } catch (error) {
+    feedback('#editor-feedback', error.message, true);
+    return;
+  }
   closeEditor();
   await loadData();
 }
@@ -263,18 +320,21 @@ async function loadData() {
   renderAll();
 }
 
-async function updateTable(table, values, id) { const { error } = await supabase.from(table).update(values).eq('id', id); if (error) throw error; }
+async function updateTable(table, values, id) { await write('update', table, { values, id }); }
 
 async function subscribe() {
-  ['produtos', 'sorteios', 'cronograma', 'candidatas'].forEach((table) => supabase.channel(`admin-${table}`).on('postgres_changes', { event: '*', schema: 'public', table }, loadData).subscribe());
-  // Canal privado: o Realtime valida as policies com o token da sessao do organizador.
+  // setAuth ANTES de assinar: o Realtime precisa do token da sessão já aplicado
+  // no socket quando o canal entra, senão ele avalia as policies como anônimo.
   await supabase.realtime.setAuth();
-  state.alertChannel = supabase.channel('avisos-globais', { config: { private: true } });
-  state.alertStatus = 'CONECTANDO';
-  state.alertChannel.subscribe((status, error) => { state.alertStatus = status; if (error) console.error('Canal de avisos:', error.message); });
+  supabase.channel('admin-tabelas')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'produtos' }, loadData)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'sorteios' }, loadData)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'cronograma' }, loadData)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'candidatas' }, loadData)
+    .subscribe();
 }
 
-async function showAdmin(session) { $('#login-panel').hidden = true; $('#admin-panel').hidden = false; $('#sign-out').hidden = false; $('#admin-email').textContent = session.user.email; await loadData(); await subscribe(); }
+async function showAdmin(session) { $('#login-panel').hidden = true; $('#admin-panel').hidden = false; $('#sign-out').hidden = false; $('#admin-email').textContent = session.user.email; await checkOrganizer(); await loadData(); await subscribe(); }
 
 $('#login-form').addEventListener('submit', async (event) => { event.preventDefault(); feedback('#login-feedback', 'Entrando...'); const { data, error } = await supabase.auth.signInWithPassword({ email: $('#email').value, password: $('#password').value }); if (error) { feedback('#login-feedback', error.message, true); return; } showAdmin(data.session); });
 $('#sign-out').addEventListener('click', async () => { await supabase.auth.signOut(); window.location.reload(); });
@@ -306,7 +366,26 @@ document.addEventListener('click', async (event) => {
 
 document.addEventListener('submit', async (event) => {
   if (event.target.id === 'number-form') { event.preventDefault(); const draw = state.sorteios.find((item) => String(item.id) === $('#active-draw').value); const number = Number($('#called-number').value); if (!Number.isInteger(number)) return; const numbers = Array.isArray(draw.numeros_sorteados) ? draw.numeros_sorteados.map(Number) : []; if (!numbers.includes(number)) numbers.push(number); try { await updateTable('sorteios', { numeros_sorteados: numbers, ultimo_numero: number, status: draw.status === 'aguardando' ? 'em_andamento' : draw.status }, draw.id); $('#called-number').value = ''; feedback('#draw-feedback', 'Número atualizado ao vivo.'); } catch (error) { feedback('#draw-feedback', error.message, true); } }
-  if (event.target.id === 'alert-form') { event.preventDefault(); const message = $('#alert-message').value.trim(); if (!message) return; if (state.alertStatus !== 'SUBSCRIBED') { feedback('#alert-feedback', 'Canal de avisos ainda conectando. Aguarde alguns segundos e tente de novo.', true); return; } const result = await state.alertChannel.send({ type: 'broadcast', event: 'alerta', payload: { mensagem: message } }); if (result === 'ok') { feedback('#alert-feedback', 'Alerta enviado para os visitantes conectados.'); $('#alert-message').value = ''; } else feedback('#alert-feedback', 'Não foi possível enviar o alerta. Tente novamente.', true); }
+  // O aviso agora é uma linha em public.avisos. Antes era um broadcast em canal
+  // privado: o send() respondia 'ok' mesmo quando o servidor descartava a
+  // mensagem, e quem abrisse o site depois do disparo nunca via o recado.
+  if (event.target.id === 'alert-form') {
+    event.preventDefault();
+    const message = $('#alert-message').value.trim();
+    if (!message) return;
+    const button = event.target.querySelector('button[type="submit"]');
+    button.disabled = true;
+    feedback('#alert-feedback', 'Publicando aviso...');
+    try {
+      await write('insert', 'avisos', { values: { mensagem: message } });
+      feedback('#alert-feedback', 'Aviso publicado. Aparece na hora para quem está no site, e também para quem entrar nos próximos minutos.');
+      $('#alert-message').value = '';
+    } catch (error) {
+      feedback('#alert-feedback', error.message, true);
+    } finally {
+      button.disabled = false;
+    }
+  }
 });
 
 document.addEventListener('click', async (event) => { if (event.target.id === 'reset-draw') { const draw = state.sorteios.find((item) => String(item.id) === $('#active-draw').value); if (!draw || !window.confirm('Limpar todos os números deste sorteio?')) return; try { await updateTable('sorteios', { numeros_sorteados: [], ultimo_numero: null, status: 'aguardando' }, draw.id); feedback('#draw-feedback', 'Sorteio resetado.'); } catch (error) { feedback('#draw-feedback', error.message, true); } } });

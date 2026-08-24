@@ -11,6 +11,7 @@
       <section id="login-panel" class="login-panel"><p class="kicker">Acesso restrito</p><h1>Painel da organização</h1><p>Entre com o e-mail e a senha cadastrados no Supabase Auth.</p><form id="login-form"><label>E-mail<input id="email" type="email" autocomplete="email" required /></label><label>Senha<input id="password" type="password" autocomplete="current-password" required /></label><button class="primary-button" type="submit">Entrar no painel</button><p id="login-feedback" class="feedback" role="alert"></p></form></section>
       <section id="admin-panel" hidden>
         <div class="admin-intro"><div><p class="kicker">Atualização ao vivo</p><h1>Controle da festa</h1></div><span id="admin-email" class="user-chip"></span></div>
+        <p id="permission-warning" class="permission-warning" role="alert" hidden></p>
 
         <section class="admin-card alert-control"><div><p class="section-label">Aviso global</p><h2>Comunicado para visitantes</h2></div><form id="alert-form"><label class="sr-only" for="alert-message">Mensagem do aviso</label><input id="alert-message" maxlength="240" placeholder="Ex.: Atenção: dono do veículo ABC-1234..." required /><button class="primary-button" type="submit">Disparar alerta</button></form><p id="alert-feedback" class="feedback" role="status"></p></section>
 

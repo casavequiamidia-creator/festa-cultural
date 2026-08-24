@@ -2,7 +2,15 @@ import { EVENT_CONFIG, supabase } from './supabase-config.js';
 
 // `pedido` é a Lista de pedido do visitante: um mapa { idDoProduto: quantidade }
 // guardado apenas no localStorage do próprio celular. Nada é enviado ao banco.
-const state = { produtos: [], sorteios: [], cronograma: [], candidatas: [], category: 'todos', selectedDrawId: null, route: 'inicio', pedido: {} };
+const state = { produtos: [], sorteios: [], cronograma: [], candidatas: [], category: 'todos', selectedDrawId: null, route: 'inicio', pedido: {}, conexao: 'conectando', canal: null, ultimoAvisoId: 0, tentativas: 0 };
+// Rede de festa cai e volta o tempo todo, e ha operadora que bloqueia WebSocket.
+// Por isso o site nunca depende so do Realtime: ele tambem recarrega sozinho.
+const POLL_AO_VIVO = 45000;
+const POLL_SEM_REALTIME = 12000;
+const AVISO_VALIDO_MS = 3 * 60 * 1000;
+let pollTimer = null;
+let reconnectTimer = null;
+let recargaTimer = null;
 const ORDER_KEY = 'festa-cultural:lista-de-pedido';
 
 const $ = (selector) => document.querySelector(selector);
@@ -166,28 +174,86 @@ function renderSchedule() {
 }
 function renderAll() { renderHome(); renderProducts(); renderActivities(); renderDraws(); renderCandidates(); renderSchedule(); renderOrder(); renderOrderBar(); refreshIcons(); }
 
+function applyNetworkLabel() {
+  if (state.conexao === 'ao-vivo') setNetwork('Informações ao vivo', 'online');
+  else if (state.conexao === 'reconectando') setNetwork('Rede instável — atualizando sozinho', 'offline');
+  else setNetwork('Conectando ao evento...', 'loading');
+}
+
+// Com o Realtime funcionando o polling e so uma rede de seguranca; sem ele, e o
+// que mantem a tela do visitante viva.
+function schedulePolling() {
+  clearInterval(pollTimer);
+  pollTimer = setInterval(loadAll, state.conexao === 'ao-vivo' ? POLL_AO_VIVO : POLL_SEM_REALTIME);
+}
+
+// Varias tabelas podem mudar no mesmo instante: espera um pouco e recarrega uma vez so.
+function agendarRecarga() { clearTimeout(recargaTimer); recargaTimer = setTimeout(loadAll, 180); }
+
+function handleAviso(aviso) {
+  if (!aviso) return;
+  const id = Number(aviso.id);
+  if (!Number.isFinite(id) || id <= state.ultimoAvisoId) return;
+  state.ultimoAvisoId = id;
+  // Nao reabre recado velho para quem acabou de chegar.
+  if (Date.now() - new Date(aviso.criado_em).getTime() > AVISO_VALIDO_MS) return;
+  showPublicAlert(aviso.mensagem);
+}
+
+// A tabela de avisos e nova: se ela ainda nao existe, o site continua normal.
+async function loadAvisos() {
+  const { data, error } = await supabase.from('avisos').select('*').order('id', { ascending: false }).limit(1);
+  if (error) { console.warn('Avisos indisponíveis:', error.message); return; }
+  handleAviso(data?.[0]);
+}
+
 async function loadAll() {
-  setNetwork('Atualizando informações...', 'loading');
+  if (state.conexao === 'conectando') setNetwork('Atualizando informações...', 'loading');
   const [produtos, sorteios, cronograma, candidatas] = await Promise.all([
     supabase.from('produtos').select('*').order('nome'), supabase.from('sorteios').select('*').order('id', { ascending: false }), supabase.from('cronograma').select('*').order('horario_previsto'), supabase.from('candidatas').select('*').order('nome'),
   ]);
   const errors = [produtos, sorteios, cronograma, candidatas].map((result) => result.error).filter(Boolean);
-  if (errors.length) { setNetwork('Não foi possível atualizar agora. Tentaremos reconectar.', 'offline'); console.error(errors); return; }
+  if (errors.length) { setNetwork('Não foi possível atualizar agora. Tentando de novo...', 'offline'); console.error(errors); return; }
   state.produtos = produtos.data || []; state.sorteios = sorteios.data || []; state.cronograma = cronograma.data || []; state.candidatas = candidatas.data || [];
   pruneOrder();
-  renderAll(); setNetwork('Informações ao vivo', 'online');
+  renderAll();
+  applyNetworkLabel();
+  loadAvisos();
 }
 
 function showPublicAlert(message) { const alert = $('#public-alert'); alert.textContent = `📣 ${message}`; alert.hidden = false; clearTimeout(showPublicAlert.timer); showPublicAlert.timer = setTimeout(() => { alert.hidden = true; }, 25000); }
 function configureStaticInfo() { $('#pix-key').textContent = EVENT_CONFIG.pixKey; $('#pix-holder').textContent = EVENT_CONFIG.pixHolder; $('#pix-bank').textContent = EVENT_CONFIG.pixBank; const help = $('#help-button'); if (EVENT_CONFIG.whatsappNumber) help.href = `https://wa.me/${EVENT_CONFIG.whatsappNumber.replace(/\D/g, '')}`; else help.hidden = true; const qr = $('.qr-placeholder'); if (EVENT_CONFIG.pixQrImage) qr.innerHTML = `<img src="${escapeHtml(EVENT_CONFIG.pixQrImage)}" alt="QR Code PIX" />`; }
 
-async function subscribeRealtime() {
-  ['produtos', 'sorteios', 'cronograma', 'candidatas'].forEach((table) => supabase.channel(`festa-${table}`).on('postgres_changes', { event: '*', schema: 'public', table }, () => loadAll()).subscribe((status) => { if (status === 'SUBSCRIBED') setNetwork('Informações ao vivo', 'online'); if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setNetwork('Rede instável. Reconectando...', 'offline'); }));
-  // O canal de avisos e privado: so organizadores publicam nele. setAuth() e
-  // obrigatorio para o Realtime avaliar as policies de realtime.messages.
-  await supabase.realtime.setAuth();
-  supabase.channel('avisos-globais', { config: { private: true } }).on('broadcast', { event: 'alerta' }, ({ payload }) => { if (payload?.mensagem) showPublicAlert(payload.mensagem); }).subscribe();
+function agendarReconexao() {
+  clearTimeout(reconnectTimer);
+  state.tentativas = Math.min(state.tentativas + 1, 6);
+  const espera = Math.min(1000 * 2 ** state.tentativas, 30000);
+  reconnectTimer = setTimeout(subscribeRealtime, espera);
 }
+
+async function subscribeRealtime() {
+  // setAuth ANTES de assinar: o token precisa estar no socket quando o canal
+  // entra, senao o Realtime avalia as policies com a credencial errada.
+  await supabase.realtime.setAuth();
+  if (state.canal) { await supabase.removeChannel(state.canal); state.canal = null; }
+  // Um canal so para tudo: menos juncao para dar errado em rede ruim.
+  const canal = supabase.channel('festa-ao-vivo');
+  ['produtos', 'sorteios', 'cronograma', 'candidatas'].forEach((table) => canal.on('postgres_changes', { event: '*', schema: 'public', table }, agendarRecarga));
+  canal.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'avisos' }, (payload) => handleAviso(payload.new));
+  canal.subscribe((status) => {
+    if (status === 'SUBSCRIBED') { state.conexao = 'ao-vivo'; state.tentativas = 0; clearTimeout(reconnectTimer); loadAll(); }
+    else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') { state.conexao = 'reconectando'; agendarReconexao(); }
+    applyNetworkLabel();
+    schedulePolling();
+  });
+  state.canal = canal;
+  schedulePolling();
+}
+
+// Celular guardado no bolso congela timers e derruba o socket. Ao voltar para a
+// tela, recarrega na hora em vez de esperar o proximo ciclo.
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { loadAll(); if (state.conexao !== 'ao-vivo') agendarReconexao(); } });
+window.addEventListener('online', () => { loadAll(); agendarReconexao(); });
 
 const menuToggle = document.querySelector('.menu-toggle');
 menuToggle?.addEventListener('click', () => {
