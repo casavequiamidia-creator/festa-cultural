@@ -2,16 +2,24 @@ import { EVENT_CONFIG, supabase } from './supabase-config.js';
 
 // `pedido` é a Lista de pedido do visitante: um mapa { idDoProduto: quantidade }
 // guardado apenas no localStorage do próprio celular. Nada é enviado ao banco.
-const state = { produtos: [], sorteios: [], cronograma: [], candidatas: [], category: 'todos', selectedDrawId: null, route: 'inicio', pedido: {}, conexao: 'conectando', canal: null, ultimoAvisoId: 0, tentativas: 0 };
+const state = { produtos: [], sorteios: [], cronograma: [], candidatas: [], category: 'todos', selectedDrawId: null, route: 'inicio', pedido: {}, vibrar: true, conexao: 'conectando', canal: null, ultimoAvisoId: 0, tentativas: 0 };
 // Rede de festa cai e volta o tempo todo, e ha operadora que bloqueia WebSocket.
 // Por isso o site nunca depende so do Realtime: ele tambem recarrega sozinho.
 const POLL_AO_VIVO = 45000;
 const POLL_SEM_REALTIME = 12000;
 const AVISO_VALIDO_MS = 3 * 60 * 1000;
+// `numerosVistos` guarda o ultimo numero ja conhecido de cada sorteio, para
+// distinguir "numero novo" de "mesma tela recarregada".
+const numerosVistos = new Map();
+let primeiraCarga = true;
 let pollTimer = null;
 let reconnectTimer = null;
 let recargaTimer = null;
 const ORDER_KEY = 'festa-cultural:lista-de-pedido';
+const VIBRACAO_KEY = 'festa-cultural:vibrar';
+// A Vibration API nao existe no Safari do iPhone. Onde nao ha, o aviso vira
+// so o destaque visual do numero, e o controle de liga/desliga some.
+const PODE_VIBRAR = typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function';
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -35,6 +43,58 @@ function renderStatus(status) { return `<span class="status status-${escapeHtml(
 // Escolhe um ícone pelo primeiro alérgeno citado, só para dar leitura rápida ao selo.
 function allergenIcon(text = '') { const value = text.toLowerCase(); if (value.includes('amendoim') || value.includes('castanha') || value.includes('nozes')) return '🥜'; if (value.includes('glúten') || value.includes('gluten') || value.includes('trigo')) return '🌾'; if (value.includes('leite') || value.includes('lactose')) return '🥛'; if (value.includes('ovo')) return '🥚'; return '⚠️'; }
 function renderAllergens(item) { return item.alergenos ? `<span class="allergen-tag"><i aria-hidden="true">${allergenIcon(item.alergenos)}</i>${escapeHtml(item.alergenos)}</span>` : ''; }
+
+/* ------------------------------------------------------------------ *
+ * Aviso de numero novo: vibracao + destaque na tela
+ * ------------------------------------------------------------------ */
+function loadVibracao() { try { return localStorage.getItem(VIBRACAO_KEY) !== '0'; } catch { return true; } }
+function saveVibracao() { try { localStorage.setItem(VIBRACAO_KEY, state.vibrar ? '1' : '0'); } catch { /* segue sem persistir */ } }
+
+function vibrar(padrao) {
+  if (!state.vibrar || !PODE_VIBRAR) return;
+  // O navegador ignora a vibracao sem interacao previa e com a aba escondida.
+  try { navigator.vibrate(padrao); } catch { /* aparelho recusou */ }
+}
+
+function toggleVibracao() {
+  state.vibrar = !state.vibrar;
+  saveVibracao();
+  if (state.vibrar) vibrar(70); // confirma que funciona no aparelho
+  renderHome();
+  renderDrawDetail();
+}
+
+function vibracaoControl() {
+  if (!PODE_VIBRAR) return '<p class="vibra-nota">Fique de olho na tela: o número pisca a cada chamada. Este aparelho não permite vibração pelo navegador.</p>';
+  return `<button class="vibra-toggle${state.vibrar ? ' is-on' : ''}" type="button" data-toggle-vibracao aria-pressed="${state.vibrar}"><span class="vibra-switch" aria-hidden="true"></span><span>Vibrar a cada número sorteado</span></button>`;
+}
+
+// Compara o que chegou do banco com o que ja estava na tela.
+function detectarNumerosNovos() {
+  const novos = [];
+  state.sorteios.forEach((draw) => {
+    const anterior = numerosVistos.get(draw.id);
+    const atual = draw.ultimo_numero;
+    numerosVistos.set(draw.id, atual);
+    if (primeiraCarga || anterior === undefined) return; // nao avisa ao abrir o site
+    if (atual === null || atual === undefined || anterior === atual) return;
+    if (draw.status !== 'em_andamento') return;
+    novos.push(draw);
+  });
+  primeiraCarga = false;
+  return novos;
+}
+
+// Chamado depois do render, senao a classe seria apagada na re-renderizacao.
+function anunciarNumerosNovos(draws) {
+  if (!draws.length) return;
+  vibrar([140, 70, 140]);
+  draws.forEach((draw) => $$(`[data-numero-de="${draw.id}"]`).forEach((element) => {
+    element.classList.remove('numero-novo');
+    void element.offsetWidth; // reinicia a animacao
+    element.classList.add('numero-novo');
+  }));
+}
 
 /* ------------------------------------------------------------------ *
  * Lista de pedido
@@ -104,11 +164,24 @@ function renderOrder() {
 /* ------------------------------------------------------------------ *
  * Telas
  * ------------------------------------------------------------------ */
+function liveCard(draw) {
+  const rotulo = draw.tipo === 'leilao' ? 'Último lance' : 'Último número';
+  return `<article class="live-card">
+    <div class="live-card-top"><span class="draw-type">${escapeHtml(drawTypeLabel[draw.tipo] || draw.tipo)} · ${escapeHtml(draw.identificacao)}</span>${draw.ordem_premio ? `<span class="prize-order is-inline">${draw.ordem_premio}º Prêmio</span>` : ''}</div>
+    <h3>${escapeHtml(draw.premio)}</h3>
+    <div class="live-number" data-numero-de="${draw.id}"><span>${rotulo}</span><strong>${draw.ultimo_numero ?? '—'}</strong></div>
+    <button class="primary-button" type="button" data-open-draw="${draw.id}">Acompanhar ao vivo <span aria-hidden="true">→</span></button>
+  </article>`;
+}
+
 function renderHome() {
-  const current = state.sorteios.find((draw) => draw.status === 'em_andamento');
+  const live = state.sorteios.filter((draw) => draw.status === 'em_andamento');
   const hero = $('#live-hero');
-  hero.hidden = !current;
-  hero.innerHTML = current ? `<span>🔥 AO VIVO</span><div><strong>Sorteio em andamento: ${escapeHtml(current.premio)}</strong><small>${escapeHtml(current.identificacao)} — toque para acompanhar.</small></div><button class="arrow-button" type="button" data-open-draw="${current.id}" aria-label="Acompanhar sorteio">→</button>` : '';
+  hero.hidden = !live.length;
+  if (!live.length) { hero.innerHTML = ''; return; }
+  hero.innerHTML = `<div class="live-head"><span class="live-badge"><i aria-hidden="true"></i>AO VIVO</span><h2>${live.length === 1 ? 'Sorteio acontecendo agora' : `${live.length} sorteios acontecendo agora`}</h2></div>
+    <div class="live-grid">${live.map(liveCard).join('')}</div>
+    ${vibracaoControl()}`;
 }
 
 function renderProducts() {
@@ -153,7 +226,7 @@ function renderDrawDetail() {
   if (!draw) { detail.hidden = true; return; }
   const numbers = Array.isArray(draw.numeros_sorteados) ? draw.numeros_sorteados.map(Number).filter(Number.isFinite) : [];
   detail.hidden = false;
-  detail.innerHTML = `<div class="detail-header"><div><p class="kicker">${escapeHtml(drawTypeLabel[draw.tipo] || draw.tipo)}${draw.ordem_premio ? ` · ${draw.ordem_premio}º Prêmio` : ''}</p><h2>${escapeHtml(draw.premio)}</h2><p>${escapeHtml(draw.identificacao)}</p></div>${renderStatus(draw.status)}</div><div class="last-number"><span>${draw.tipo === 'leilao' ? 'Último lance' : 'Último número'}</span><strong>${draw.ultimo_numero ?? '—'}</strong></div>${draw.tipo === 'bingo' ? renderBingo(numbers) : `<div class="number-history"><h3>Histórico</h3>${numbers.length ? numbers.map((number) => `<span>${number}</span>`).join('') : '<p>Nenhum número chamado ainda.</p>'}</div>`}`;
+  detail.innerHTML = `<div class="detail-header"><div><p class="kicker">${escapeHtml(drawTypeLabel[draw.tipo] || draw.tipo)}${draw.ordem_premio ? ` · ${draw.ordem_premio}º Prêmio` : ''}</p><h2>${escapeHtml(draw.premio)}</h2><p>${escapeHtml(draw.identificacao)}</p></div>${renderStatus(draw.status)}</div><div class="last-number" data-numero-de="${draw.id}"><span>${draw.tipo === 'leilao' ? 'Último lance' : 'Último número'}</span><strong>${draw.ultimo_numero ?? '—'}</strong></div>${draw.status === 'em_andamento' ? vibracaoControl() : ''}${draw.tipo === 'bingo' ? renderBingo(numbers) : `<div class="number-history"><h3>Histórico</h3>${numbers.length ? numbers.map((number) => `<span>${number}</span>`).join('') : '<p>Nenhum número chamado ainda.</p>'}</div>`}`;
 }
 
 function renderCandidates() {
@@ -216,7 +289,9 @@ async function loadAll() {
   if (errors.length) { setNetwork('Não foi possível atualizar agora. Tentando de novo...', 'offline'); console.error(errors); return; }
   state.produtos = produtos.data || []; state.sorteios = sorteios.data || []; state.cronograma = cronograma.data || []; state.candidatas = candidatas.data || [];
   pruneOrder();
+  const numerosNovos = detectarNumerosNovos();
   renderAll();
+  anunciarNumerosNovos(numerosNovos);
   applyNetworkLabel();
   loadAvisos();
 }
@@ -267,6 +342,7 @@ document.addEventListener('click', (event) => {
   if (increase) { const id = increase.dataset.orderInc; setOrderQty(id, orderQty(id) + 1); return; }
   const decrease = event.target.closest('[data-order-dec]');
   if (decrease) { const id = decrease.dataset.orderDec; setOrderQty(id, orderQty(id) - 1); return; }
+  if (event.target.closest('[data-toggle-vibracao]')) { toggleVibracao(); return; }
   const rules = event.target.closest('[data-rules]');
   if (rules) { const panel = document.getElementById(`regras-${rules.dataset.rules}`); if (panel) { panel.hidden = !panel.hidden; rules.setAttribute('aria-expanded', String(!panel.hidden)); } return; }
   const route = event.target.closest('[data-route]'); if (route) { event.preventDefault(); routeTo(route.dataset.route); document.body.classList.remove('menu-open'); menuToggle?.setAttribute('aria-expanded', 'false'); menuToggle?.setAttribute('aria-label', 'Abrir menu'); }
@@ -277,5 +353,6 @@ $('#clear-order').addEventListener('click', () => { if (!Object.keys(state.pedid
 $('#copy-pix').addEventListener('click', async () => { try { await navigator.clipboard.writeText(EVENT_CONFIG.pixKey); $('#pix-feedback').textContent = 'Chave copiada! Abra o app do seu banco.'; } catch { $('#pix-feedback').textContent = 'Não foi possível copiar automaticamente. Selecione a chave acima.'; } });
 
 state.pedido = loadOrder();
+state.vibrar = loadVibracao();
 renderOrder(); renderOrderBar();
 setInterval(renderSchedule, 30000); configureStaticInfo(); loadAll(); subscribeRealtime();

@@ -781,3 +781,143 @@ body.menu-open .order-bar { display: none; }
 @media (max-width: 420px) {
   .brand-logo { width: min(188px, 55vw); }
 }
+
+/* ==========================================================================
+   Sorteio em andamento: destaque no topo da home + aviso de número novo.
+   ========================================================================== */
+
+/* O styles.css desenhava a .live-hero como uma tarja em flex. Aqui ela virou
+   um painel com um card por sorteio, então volta a ser bloco. */
+.live-hero {
+  align-items: stretch;
+  background: linear-gradient(150deg, rgba(236, 117, 45, .16), rgba(20, 15, 12, .92) 62%);
+  border: 1px solid rgba(236, 117, 45, .55);
+  border-radius: 22px;
+  box-shadow: 0 0 34px rgba(236, 117, 45, .12), inset 0 1px 0 rgba(255, 255, 255, .04);
+  display: block;
+  gap: 0;
+  margin: 0 0 30px;
+  padding: 21px 22px 22px;
+}
+.live-hero[hidden] { display: none; }
+
+.live-head { align-items: center; display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 17px; }
+.live-head h2 { font-size: clamp(1.35rem, 4vw, 1.85rem); margin: 0; }
+.live-badge {
+  align-items: center;
+  background: rgba(0, 199, 107, .12);
+  border: 1px solid rgba(0, 199, 107, .5);
+  border-radius: 999px;
+  color: #81df9f;
+  display: inline-flex;
+  font-size: .74rem;
+  font-weight: 800;
+  gap: 8px;
+  letter-spacing: .12em;
+  padding: 7px 12px;
+}
+.live-badge i { animation: live-pulse 1.5s ease-in-out infinite; background: var(--green); border-radius: 50%; height: 9px; width: 9px; }
+@keyframes live-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 199, 107, .55); opacity: 1; }
+  50% { box-shadow: 0 0 0 7px rgba(0, 199, 107, 0); opacity: .65; }
+}
+
+.live-grid { display: grid; gap: 13px; grid-template-columns: repeat(auto-fit, minmax(255px, 1fr)); }
+.live-card {
+  background: linear-gradient(150deg, #1d1a18, #121111 72%);
+  border: 1px solid rgba(236, 117, 45, .42);
+  border-radius: 17px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  padding: 17px;
+}
+.live-card-top { align-items: center; display: flex; flex-wrap: wrap; gap: 9px; justify-content: space-between; }
+.live-card h3 { font-size: 1.14rem; line-height: 1.3; margin: 0; }
+.prize-order.is-inline { position: static; }
+
+.live-number {
+  align-items: center;
+  background: radial-gradient(circle at 78% 0, #33200f, #131315 66%);
+  border: 1px solid #6d4027;
+  border-radius: 14px;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  margin-top: auto;
+  padding: 13px 18px;
+}
+.live-number span { color: var(--muted); font-size: .72rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.live-number strong {
+  color: var(--orange-bright);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(2.8rem, 9vw, 4rem);
+  line-height: .8;
+}
+.live-card .primary-button { min-height: 54px; width: 100%; }
+
+/* Pisca quando um número novo é chamado. Vale para o card da home e para a
+   tela de acompanhamento — as duas carregam data-numero-de. */
+.numero-novo { animation: numero-chamado .9s ease-out 2; }
+@keyframes numero-chamado {
+  0% { border-color: var(--orange-bright); box-shadow: 0 0 0 0 rgba(255, 140, 66, .55); transform: scale(1); }
+  35% { border-color: #ffd48e; box-shadow: 0 0 34px 6px rgba(255, 140, 66, .32); transform: scale(1.035); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 140, 66, 0); transform: scale(1); }
+}
+
+/* --- Interruptor da vibração --------------------------------------------- */
+.vibra-toggle {
+  align-items: center;
+  background: transparent;
+  border: 1px solid #3d3630;
+  border-radius: 999px;
+  color: #cdcbcb;
+  display: inline-flex;
+  font-size: .93rem;
+  font-weight: 600;
+  gap: 12px;
+  margin-top: 16px;
+  min-height: 50px;
+  padding: 0 18px 0 12px;
+  transition: .2s ease;
+}
+.vibra-toggle:hover { border-color: var(--orange); }
+.vibra-toggle.is-on { background: rgba(236, 117, 45, .1); border-color: var(--orange); color: #ffd0a5; }
+.vibra-switch {
+  background: #2c2a29;
+  border-radius: 999px;
+  flex: 0 0 auto;
+  height: 26px;
+  position: relative;
+  transition: background .2s ease;
+  width: 46px;
+}
+.vibra-switch::after {
+  background: #8d8a88;
+  border-radius: 50%;
+  content: '';
+  height: 20px;
+  left: 3px;
+  position: absolute;
+  top: 3px;
+  transition: .2s ease;
+  width: 20px;
+}
+.vibra-toggle.is-on .vibra-switch { background: rgba(236, 117, 45, .45); }
+.vibra-toggle.is-on .vibra-switch::after { background: var(--orange-bright); left: 23px; }
+.vibra-nota { color: var(--muted); font-size: .87rem; line-height: 1.5; margin: 16px 0 0; }
+
+.draw-detail .vibra-toggle, .draw-detail .vibra-nota { margin-bottom: 20px; margin-top: 0; }
+
+@media (max-width: 780px) {
+  .live-hero { border-radius: 19px; margin-bottom: 24px; padding: 17px; }
+  .live-grid { grid-template-columns: 1fr; }
+  .live-head { gap: 10px; margin-bottom: 14px; }
+  .vibra-toggle { font-size: .88rem; width: 100%; }
+}
+
+/* Quem pede menos animação recebe só a mudança de cor. */
+@media (prefers-reduced-motion: reduce) {
+  .live-badge i, .numero-novo { animation: none; }
+  .numero-novo { border-color: var(--orange-bright); }
+}
