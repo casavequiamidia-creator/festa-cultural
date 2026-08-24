@@ -11,12 +11,67 @@
       <section id="login-panel" class="login-panel"><p class="kicker">Acesso restrito</p><h1>Painel da organização</h1><p>Entre com o e-mail e a senha cadastrados no Supabase Auth.</p><form id="login-form"><label>E-mail<input id="email" type="email" autocomplete="email" required /></label><label>Senha<input id="password" type="password" autocomplete="current-password" required /></label><button class="primary-button" type="submit">Entrar no painel</button><p id="login-feedback" class="feedback" role="alert"></p></form></section>
       <section id="admin-panel" hidden>
         <div class="admin-intro"><div><p class="kicker">Atualização ao vivo</p><h1>Controle da festa</h1></div><span id="admin-email" class="user-chip"></span></div>
+
         <section class="admin-card alert-control"><div><p class="section-label">Aviso global</p><h2>Comunicado para visitantes</h2></div><form id="alert-form"><label class="sr-only" for="alert-message">Mensagem do aviso</label><input id="alert-message" maxlength="240" placeholder="Ex.: Atenção: dono do veículo ABC-1234..." required /><button class="primary-button" type="submit">Disparar alerta</button></form><p id="alert-feedback" class="feedback" role="status"></p></section>
-        <section class="admin-card"><div class="admin-card-title"><div><p class="section-label">Cardápio e barracas</p><h2>Disponibilidade</h2></div><span id="product-count" class="count-chip"></span></div><div id="admin-products" class="admin-list"></div></section>
-        <section class="admin-card"><div class="admin-card-title"><div><p class="section-label">Bingo, rifa e leilão</p><h2>Console de sorteio</h2></div></div><label for="active-draw">Sorteio ativo<select id="active-draw"></select></label><div id="draw-console" class="draw-console"></div></section>
-        <section class="admin-card"><div class="admin-card-title"><div><p class="section-label">Programação</p><h2>Cronograma</h2></div></div><div id="admin-schedule" class="admin-list"></div></section>
+
+        <section class="admin-card">
+          <div class="admin-card-title">
+            <div><p class="section-label">Cardápio e barracas</p><h2>Itens à venda</h2></div>
+            <div class="card-tools"><span id="product-count" class="count-chip"></span><button class="small-button new-button" type="button" data-new="produtos">+ Novo item</button></div>
+          </div>
+          <p class="muted card-help">Os botões de disponibilidade mudam na hora para os visitantes. Use <b>Editar</b> para preço, descrição, foto e demais campos.</p>
+          <div id="admin-products" class="admin-list"></div>
+        </section>
+
+        <section class="admin-card">
+          <div class="admin-card-title">
+            <div><p class="section-label">Bingo, rifa e leilão</p><h2>Console de sorteio</h2></div>
+          </div>
+          <label for="active-draw">Sorteio ativo<select id="active-draw"></select></label>
+          <div id="draw-console" class="draw-console"></div>
+        </section>
+
+        <section class="admin-card">
+          <div class="admin-card-title">
+            <div><p class="section-label">Prêmios da noite</p><h2>Cadastro de sorteios</h2></div>
+            <div class="card-tools"><span id="draw-count" class="count-chip"></span><button class="small-button new-button" type="button" data-new="sorteios">+ Novo sorteio</button></div>
+          </div>
+          <div id="admin-draws" class="admin-list"></div>
+        </section>
+
+        <section class="admin-card">
+          <div class="admin-card-title">
+            <div><p class="section-label">Rainha Caipira</p><h2>Candidatas</h2></div>
+            <div class="card-tools"><span id="candidate-count" class="count-chip"></span><button class="small-button new-button" type="button" data-new="candidatas">+ Nova candidata</button></div>
+          </div>
+          <div id="admin-candidates" class="admin-list"></div>
+        </section>
+
+        <section class="admin-card">
+          <div class="admin-card-title">
+            <div><p class="section-label">Programação</p><h2>Cronograma</h2></div>
+            <div class="card-tools"><span id="schedule-count" class="count-chip"></span><button class="small-button new-button" type="button" data-new="cronograma">+ Novo evento</button></div>
+          </div>
+          <div id="admin-schedule" class="admin-list"></div>
+        </section>
       </section>
     </main>
+
+    <dialog id="editor" class="editor-dialog" aria-labelledby="editor-title">
+      <form id="editor-form">
+        <header class="editor-head">
+          <h2 id="editor-title">Editar</h2>
+          <button id="editor-close" class="text-button" type="button">Fechar</button>
+        </header>
+        <div id="editor-fields" class="editor-fields"></div>
+        <p id="editor-feedback" class="feedback" role="alert"></p>
+        <footer class="editor-actions">
+          <button id="editor-delete" class="danger-button" type="button">Excluir</button>
+          <button id="editor-save" class="primary-button" type="submit">Salvar alterações</button>
+        </footer>
+      </form>
+    </dialog>
+
     <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
     <script>window.lucide?.createIcons();</script>
     <script type="module" src="./js/admin.js"></script>

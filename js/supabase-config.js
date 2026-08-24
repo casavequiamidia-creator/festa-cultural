@@ -7,10 +7,11 @@ export const supabase = createClient(
 );
 
 // Informações institucionais editáveis — não armazene segredos neste arquivo.
+// DADOS FICTÍCIOS de demonstração: troque pelos dados reais da escola.
 export const EVENT_CONFIG = {
-  pixKey: 'CHAVE PIX A CONFIGURAR',
-  pixHolder: 'Escola — a configurar',
-  pixBank: 'Banco — a configurar',
+  pixKey: 'pix-festa@escolaexemplo.com',
+  pixHolder: 'APM — Escola Exemplo (fictício)',
+  pixBank: 'Banco Exemplo S.A. (fictício)',
   pixQrImage: '',
-  whatsappNumber: '',
+  whatsappNumber: '5511900000000', // fictício: troque pelo WhatsApp real da organização
 };

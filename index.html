@@ -30,6 +30,7 @@
           <button class="nav-link" type="button" data-route="rainha"><i data-lucide="crown"></i><span>Rainha</span></button>
           <button class="nav-link" type="button" data-route="barracas"><i data-lucide="store"></i><span>Barracas</span></button>
           <button class="nav-link" type="button" data-route="cronograma"><i data-lucide="clock-3"></i><span>Cronograma</span></button>
+          <button class="nav-link" type="button" data-route="lista"><i data-lucide="clipboard-list"></i><span>Minha lista</span></button>
         </nav>
         <a class="admin-link" href="./admin.html">Área da organização <i data-lucide="arrow-right" aria-hidden="true"></i></a>
       </aside>
@@ -70,6 +71,28 @@
           <div id="products-list" class="product-grid" aria-live="polite"></div>
         </section>
 
+        <section class="screen" id="lista" data-screen="lista" hidden>
+          <div class="section-header"><div><p class="kicker">Para agilizar a fila</p><h2>Lista de pedido</h2></div><i class="section-icon" data-lucide="clipboard-list"></i></div>
+          <div class="list-explainer">
+            <i data-lucide="info" aria-hidden="true"></i>
+            <div>
+              <strong>Para que serve esta lista?</strong>
+              <p>Ela existe para você <b>se organizar</b> e <b>mostrar no caixa o que deseja</b>. Monte o pedido com calma enquanto anda pela festa e, na hora de pagar, é só mostrar esta tela: o atendimento fica mais rápido e a fila anda melhor para todo mundo.</p>
+              <p class="list-explainer-note">A lista fica salva só no seu celular. Nada é enviado para a barraca e nenhum item fica reservado — o pedido é feito e pago no caixa, normalmente.</p>
+            </div>
+          </div>
+          <div id="order-items" class="order-items" aria-live="polite"></div>
+          <div id="order-summary" class="order-summary" hidden>
+            <p id="order-warning" class="order-warning" role="status" hidden></p>
+            <div class="order-total"><span>Total da lista</span><strong id="order-total-value">R$ 0,00</strong></div>
+            <p class="order-caixa"><i data-lucide="smartphone" aria-hidden="true"></i> Mostre esta tela no caixa para agilizar seu atendimento.</p>
+            <div class="order-actions">
+              <button class="primary-button" type="button" data-route="pix">Ver chave PIX <span aria-hidden="true">→</span></button>
+              <button id="clear-order" class="danger-button" type="button">Limpar lista</button>
+            </div>
+          </div>
+        </section>
+
         <section class="screen" id="pix" data-screen="pix" hidden>
           <div class="section-header"><div><p class="kicker">Pagamento rápido</p><h2>PIX da escola</h2></div><i class="section-icon" data-lucide="qr-code"></i></div>
           <div class="pix-layout"><div class="qr-placeholder image-slot" aria-label="Espaço reservado para QR Code PIX"></div><div class="pix-details"><p class="section-label">Copie e cole</p><h3>Pague com segurança</h3><p>Abra o aplicativo do seu banco, confira os dados e apresente o comprovante na barraca.</p><code id="pix-key">CHAVE PIX A CONFIGURAR</code><button id="copy-pix" class="primary-button" type="button">Copiar chave PIX</button><p id="pix-feedback" class="feedback" role="status" aria-live="polite"></p><dl><div><dt>Favorecido</dt><dd id="pix-holder">Escola — a configurar</dd></div><div><dt>Instituição</dt><dd id="pix-bank">Banco — a configurar</dd></div></dl></div></div>
@@ -97,6 +120,11 @@
         </section>
       </main>
     </div>
+    <button id="order-bar" class="order-bar" type="button" data-route="lista" hidden>
+      <i data-lucide="clipboard-list" aria-hidden="true"></i>
+      <span class="order-bar-copy"><strong>Minha lista</strong><small id="order-bar-summary"></small></span>
+      <span class="order-bar-go" aria-hidden="true">›</span>
+    </button>
     <a id="help-button" class="help-button" href="#" target="_blank" rel="noopener" aria-label="Falar com a organização pelo WhatsApp">?</a>
     <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
     <script type="module" src="./app.js"></script>

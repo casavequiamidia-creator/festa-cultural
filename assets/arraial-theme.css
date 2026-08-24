@@ -291,3 +291,427 @@ body.menu-open .menu-toggle { position: fixed; z-index: 60; }
   .nav-link { font-size: .57rem; }
   .nav-link svg { height: 22px; width: 22px; }
 }
+
+/* ==========================================================================
+   Componentes acrescentados com o layout aprovado da festa:
+   selo de alérgenos, Lista de pedido, regras das barracas, cartelas e idade.
+   ========================================================================== */
+
+/* Barra de navegação inferior: "Minha lista" (8º link) fica só no menu aberto,
+   junto de Rainha (5º) e Barracas (6º). */
+.nav-link:nth-child(8) { display: none; }
+body.menu-open .nav-link:nth-child(8) { display: flex; }
+
+/* --- Cardápio: selo de alérgenos e rodapé do card ------------------------ */
+.allergen-tag {
+  align-items: center;
+  background: rgba(236, 117, 45, .09);
+  border: 1px solid rgba(236, 117, 45, .32);
+  border-radius: 9px;
+  color: #f0b183;
+  display: inline-flex;
+  font-size: .78rem;
+  font-weight: 600;
+  gap: 7px;
+  line-height: 1.25;
+  margin-bottom: 14px;
+  padding: 7px 10px;
+}
+.allergen-tag i { font-size: .95rem; font-style: normal; }
+
+.card-footer {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 11px;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+.card-footer .price { margin: 0; }
+.card-footer .price small { color: var(--muted); font-size: .78rem; font-weight: 600; }
+
+/* --- Botão "Adicionar" e contador de quantidade -------------------------- */
+.add-button {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--orange);
+  border-radius: 999px;
+  color: var(--orange-bright);
+  display: inline-flex;
+  font-size: .92rem;
+  font-weight: 700;
+  gap: 9px;
+  min-height: 46px;
+  padding: 0 18px;
+  transition: .18s ease;
+}
+.add-button:hover { background: rgba(236, 117, 45, .14); }
+.add-button span { font-size: 1.2rem; line-height: 1; }
+.add-disabled { color: var(--muted-deep); font-size: .82rem; font-weight: 700; }
+
+.qty-stepper {
+  align-items: center;
+  background: #131313;
+  border: 1px solid #3d3d3d;
+  border-radius: 999px;
+  display: inline-flex;
+  gap: 2px;
+  padding: 4px;
+}
+.qty-stepper button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  color: #ddd;
+  display: inline-flex;
+  font-size: 1.3rem;
+  height: 38px;
+  justify-content: center;
+  line-height: 1;
+  transition: .18s ease;
+  width: 38px;
+}
+.qty-stepper button:hover { background: rgba(236, 117, 45, .18); color: var(--orange-bright); }
+.qty-stepper span { font-size: 1.02rem; font-weight: 700; min-width: 26px; text-align: center; }
+
+/* --- Barra fixa da Lista de pedido --------------------------------------- */
+.order-bar {
+  align-items: center;
+  backdrop-filter: blur(18px);
+  background: linear-gradient(105deg, rgba(30, 21, 15, .97), rgba(16, 14, 13, .96));
+  border: 1px solid rgba(236, 117, 45, .5);
+  border-radius: 22px;
+  bottom: 124px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .42), inset 0 1px 0 rgba(255, 255, 255, .04);
+  color: var(--text);
+  display: flex;
+  gap: 16px;
+  left: 50%;
+  padding: 14px 20px;
+  position: fixed;
+  text-align: left;
+  transform: translateX(-50%);
+  transition: .2s ease;
+  width: min(800px, calc(100% - 52px));
+  z-index: 45;
+}
+.order-bar[hidden] { display: none; }
+.order-bar:hover { border-color: var(--orange-bright); }
+.order-bar>svg, .order-bar>i { color: var(--orange-bright); flex: 0 0 auto; height: 34px; width: 34px; }
+.order-bar-copy { display: grid; gap: 3px; }
+.order-bar-copy strong { font-size: 1.08rem; }
+.order-bar-copy small { color: var(--gold); font-size: .93rem; font-weight: 600; }
+.order-bar-go { color: var(--orange-bright); font-size: 2.2rem; font-weight: 300; line-height: 1; margin-left: auto; }
+
+body.has-order-bar .main-content { padding-bottom: 226px; }
+body.has-order-bar .help-button { bottom: 196px; }
+body.menu-open .order-bar { display: none; }
+
+/* --- Tela: Lista de pedido ----------------------------------------------- */
+.list-explainer {
+  background: linear-gradient(108deg, #1c1713, #131313 74%);
+  border: 1px solid rgba(236, 117, 45, .3);
+  border-left: 3px solid var(--orange);
+  border-radius: 0 18px 18px 0;
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 21px 23px;
+}
+.list-explainer>svg, .list-explainer>i { color: var(--orange-bright); flex: 0 0 auto; height: 30px; margin-top: 2px; width: 30px; }
+.list-explainer strong { display: block; font-size: 1.14rem; margin-bottom: 9px; }
+.list-explainer p { color: #cdcbcb; line-height: 1.58; margin: 0 0 10px; }
+.list-explainer p b { color: var(--gold); font-weight: 700; }
+.list-explainer-note { border-top: 1px solid #322c27; color: var(--muted) !important; font-size: .9rem; margin-bottom: 0 !important; padding-top: 11px; }
+
+.order-items { display: grid; gap: 11px; }
+.order-line {
+  align-items: center;
+  background: linear-gradient(145deg, #1b1b1b, #111111);
+  border: 1px solid #343434;
+  border-radius: 17px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 17px 19px;
+}
+.order-line.sold-out { border-color: rgba(236, 113, 102, .4); opacity: .72; }
+.order-line-main { flex: 1 1 190px; }
+.order-line-main h3 { font-size: 1.1rem; margin: 0 0 5px; }
+.order-line-main p { color: var(--muted); font-size: .87rem; margin: 0; }
+.order-line-main b { color: #fa9991; }
+.order-line-total { color: var(--gold); font-size: 1.12rem; min-width: 88px; text-align: right; }
+
+.order-summary {
+  background: linear-gradient(145deg, #1c1c1c, #101010);
+  border: 1px solid #40352e;
+  border-radius: 21px;
+  box-shadow: var(--shadow);
+  margin-top: 20px;
+  padding: 24px;
+}
+.order-warning {
+  background: rgba(236, 113, 102, .1);
+  border: 1px solid rgba(236, 113, 102, .45);
+  border-radius: 11px;
+  color: #fa9991;
+  font-size: .89rem;
+  font-weight: 600;
+  line-height: 1.5;
+  margin: 0 0 17px;
+  padding: 12px 14px;
+}
+.order-warning[hidden] { display: none; }
+.order-total {
+  align-items: baseline;
+  border-bottom: 1px solid #322c27;
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 16px;
+}
+.order-total span { color: var(--muted); font-size: .8rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.order-total strong { color: var(--orange-bright); font-family: 'Barlow Condensed', sans-serif; font-size: clamp(2.4rem, 6vw, 3.4rem); line-height: .9; }
+.order-caixa { align-items: center; color: #cdcbcb; display: flex; font-size: .96rem; gap: 10px; line-height: 1.5; margin: 16px 0 20px; }
+.order-caixa>svg, .order-caixa>i { color: var(--orange-bright); flex: 0 0 auto; height: 22px; width: 22px; }
+.order-actions { display: flex; flex-wrap: wrap; gap: 11px; }
+.order-actions .primary-button { flex: 1 1 220px; }
+.order-actions .danger-button { margin-top: 0; min-height: 59px; padding: 0 20px; }
+
+/* --- Barracas: selo de destaque e painel de regras ----------------------- */
+.activity-body { display: flex; flex-direction: column; }
+.highlight-tag {
+  align-self: flex-start;
+  background: rgba(236, 117, 45, .16);
+  border: 1px solid var(--orange);
+  border-radius: 8px;
+  color: #ffd0a5;
+  font-size: .82rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+  padding: 6px 10px;
+}
+.rules-button { width: auto; }
+.activity-rules {
+  background: #131313;
+  border: 1px solid #3a332c;
+  border-radius: 13px;
+  margin-top: 14px;
+  padding: 15px 17px;
+}
+.activity-rules[hidden] { display: none; }
+.activity-rules strong { color: var(--orange-bright); display: block; font-size: .78rem; letter-spacing: .12em; margin-bottom: 10px; text-transform: uppercase; }
+.activity-rules ul { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.activity-rules li { color: #cdcbcb; font-size: .89rem; line-height: 1.5; padding-left: 20px; position: relative; }
+.activity-rules li::before { color: var(--orange); content: '•'; left: 4px; position: absolute; }
+
+/* --- Sorteios: ordem do prêmio, cartelas e horário ----------------------- */
+.draw-media { position: relative; }
+.prize-order {
+  background: linear-gradient(105deg, #f18a47, #b8481f);
+  border: 1px solid #ffb178;
+  border-radius: 11px;
+  color: #fff6ee;
+  font-size: .8rem;
+  font-weight: 800;
+  left: 12px;
+  padding: 7px 11px;
+  position: absolute;
+  top: 12px;
+}
+.draw-disclaimer { color: var(--muted-deep) !important; font-size: .76rem !important; margin-bottom: 14px !important; }
+.draw-card .card-topline { margin-bottom: 10px; }
+.draw-card h3 { clear: none; font-size: 1.22rem; margin-top: 0; }
+
+.cartela-box { border: 1px solid #3a332c; border-radius: 13px; margin-bottom: 14px; padding: 13px 15px; }
+.cartela-label { color: var(--orange-bright); display: block; font-size: .78rem; font-weight: 800; letter-spacing: .1em; margin-bottom: 10px; text-transform: uppercase; }
+.cartela-row { align-items: baseline; border-top: 1px solid #2a2521; display: flex; justify-content: space-between; padding: 9px 0 0; }
+.cartela-row:first-of-type { border-top: 0; padding-top: 0; }
+.cartela-row span { color: var(--muted); font-size: .92rem; }
+.cartela-row strong { color: var(--gold); font-size: 1.05rem; }
+.cartela-note { color: var(--muted) !important; font-size: .87rem !important; margin: 0 !important; }
+
+.draw-when { align-items: center; display: flex; gap: 12px; margin-bottom: 15px; }
+.draw-when>svg, .draw-when>i { color: var(--orange-bright); flex: 0 0 auto; height: 26px; width: 26px; }
+.draw-when div { display: grid; gap: 1px; }
+.draw-when small { color: var(--muted); font-size: .82rem; }
+.draw-when strong { color: var(--orange-bright); font-size: 1.3rem; line-height: 1.1; }
+.draw-card .secondary-button { align-items: center; display: flex; gap: 8px; justify-content: center; min-height: 52px; }
+.draw-card .secondary-button span { font-size: 1.25rem; line-height: 1; }
+
+/* --- Rainha Caipira: idade ----------------------------------------------- */
+.candidate-age {
+  align-items: center;
+  color: var(--gold);
+  display: inline-flex;
+  font-size: .95rem;
+  font-weight: 600;
+  gap: 7px;
+  margin-bottom: 9px;
+}
+.candidate-age i { color: var(--orange-bright); font-style: normal; }
+
+@media (max-width: 780px) {
+  .order-bar { border-radius: 19px; bottom: 100px; gap: 13px; padding: 12px 16px; width: calc(100% - 22px); }
+  .order-bar>svg, .order-bar>i { height: 29px; width: 29px; }
+  .order-bar-copy strong { font-size: .98rem; }
+  .order-bar-copy small { font-size: .86rem; }
+  body.has-order-bar .main-content { padding-bottom: 192px; }
+  body.has-order-bar .help-button { bottom: 168px; }
+  .list-explainer { gap: 13px; padding: 18px; }
+  .list-explainer>svg, .list-explainer>i { height: 26px; width: 26px; }
+  .order-line { padding: 15px 16px; }
+  .order-line-total { min-width: 0; }
+  .order-summary { padding: 20px; }
+  .order-actions .primary-button, .order-actions .danger-button { flex: 1 1 100%; }
+  .activity-card { grid-template-columns: 1fr; }
+  .activity-image { border-bottom: 1px solid #302f33; border-right: 0; height: 168px; min-height: 0; }
+}
+
+@media (max-width: 420px) {
+  .card-footer { gap: 9px; }
+  .add-button { min-height: 42px; padding: 0 14px; }
+  .qty-stepper button { height: 34px; width: 34px; }
+  .order-bar { bottom: 96px; }
+}
+
+/* ==========================================================================
+   Painel da organização: listas editáveis e o formulário de edição.
+   ========================================================================== */
+.card-tools { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; }
+.new-button { background: rgba(236, 117, 45, .14); border-color: var(--orange); color: #ffd0a5; min-height: 38px; padding: 0 13px; }
+.new-button:hover { background: #8d3f24; color: #fff7f0; }
+.card-help { line-height: 1.5; margin-bottom: 14px !important; }
+.card-help b { color: #ebc19e; }
+
+/* O styles.css empilhava a linha em coluna no mobile. Aqui ela volta a ser
+   uma linha que quebra sozinha — senão o flex-basis de .row-main vira altura. */
+.admin-row { align-items: center; flex-direction: row; flex-wrap: wrap; }
+.row-main { flex: 1 1 180px; min-width: 0; }
+.row-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; margin-left: auto; }
+.row-thumb {
+  background: #171719;
+  border: 1px solid #343434;
+  border-radius: 10px;
+  flex: 0 0 auto;
+  height: 52px;
+  object-fit: cover;
+  width: 52px;
+}
+.row-thumb-empty { background: linear-gradient(135deg, #19191c, #101011); border-style: dashed; display: inline-block; }
+
+/* --- Formulário de edição ------------------------------------------------ */
+.editor-dialog {
+  background: linear-gradient(160deg, #1a1a1c, #121214);
+  border: 1px solid #3d3630;
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  color: var(--text);
+  margin: auto;
+  max-height: 92vh;
+  max-width: 620px;
+  padding: 0;
+  width: min(620px, calc(100vw - 24px));
+}
+.editor-dialog::backdrop { background: rgba(0, 0, 0, .72); backdrop-filter: blur(3px); }
+.editor-dialog form { display: flex; flex-direction: column; max-height: 92vh; }
+
+.editor-head {
+  align-items: center;
+  background: linear-gradient(180deg, #1d1c1e, #171618);
+  border-bottom: 1px solid #322c27;
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  padding: 19px 22px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.editor-head h2 { font-size: 1.45rem; margin: 0; }
+
+.editor-fields { display: grid; gap: 17px; overflow-y: auto; padding: 22px; }
+.editor-fields label { color: #d0cbca; display: grid; font-size: .8rem; font-weight: 800; gap: 7px; }
+.editor-dialog input, .editor-dialog select, .editor-dialog textarea {
+  background: #0e0e10;
+  border: 1px solid #3a383d;
+  border-radius: 9px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 500;
+  min-height: 48px;
+  padding: 11px 12px;
+  width: 100%;
+}
+.editor-dialog textarea { line-height: 1.5; resize: vertical; }
+.editor-dialog input:focus, .editor-dialog select:focus, .editor-dialog textarea:focus { border-color: var(--orange); outline: 2px solid rgba(236, 117, 45, .25); outline-offset: 1px; }
+.field-hint { color: var(--muted); font-size: .76rem; font-weight: 500; line-height: 1.45; }
+.field-label { color: #d0cbca; font-size: .8rem; font-weight: 800; }
+
+.field-image { border: 1px solid #322c27; border-radius: 13px; display: grid; gap: 11px; padding: 15px; }
+.image-preview {
+  align-items: center;
+  background: linear-gradient(135deg, #19191c, #101011);
+  border: 1px dashed #4a4541;
+  border-radius: 11px;
+  color: var(--muted-deep);
+  display: flex;
+  font-size: .82rem;
+  font-weight: 700;
+  justify-content: center;
+  min-height: 150px;
+  overflow: hidden;
+}
+.image-preview img { display: block; height: 190px; object-fit: cover; width: 100%; }
+.image-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.file-button {
+  align-items: center;
+  background: rgba(236, 117, 45, .14);
+  border: 1px solid var(--orange);
+  border-radius: 9px;
+  color: #ffd0a5;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: .8rem;
+  font-weight: 800;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 15px;
+}
+.file-button:hover { background: #8d3f24; color: #fff7f0; }
+.image-url { font-size: .76rem !important; font-weight: 600 !important; }
+.image-url input { min-height: 42px !important; }
+.upload-feedback { color: #8ce9aa; font-size: .78rem; font-weight: 700; margin: 0; min-height: 1em; }
+.upload-feedback.error { color: #ff9991; }
+
+.editor-dialog .feedback { margin: 0 22px; }
+.editor-actions {
+  background: linear-gradient(0deg, #1d1c1e, #171618);
+  border-radius: 0 0 20px 20px;
+  border-top: 1px solid #322c27;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 17px 22px;
+  position: sticky;
+  bottom: 0;
+}
+.editor-actions .danger-button { margin-top: 0; }
+.editor-actions .danger-button[hidden] { display: none; }
+.editor-actions .primary-button { margin-left: auto; min-height: 50px; }
+
+@media (max-width: 620px) {
+  .editor-dialog { border-radius: 18px; max-height: 96vh; width: calc(100vw - 16px); }
+  .editor-dialog form { max-height: 96vh; }
+  .editor-head { padding: 16px 17px; }
+  .editor-head h2 { font-size: 1.2rem; }
+  .editor-fields { padding: 17px; }
+  .editor-dialog .feedback { margin: 0 17px; }
+  .editor-actions { flex-wrap: wrap; padding: 14px 17px; }
+  .editor-actions .primary-button { flex: 1 1 100%; margin-left: 0; order: -1; }
+  .editor-actions .danger-button { width: 100%; }
+  .admin-row { align-items: flex-start; }
+  .row-actions { justify-content: flex-start; margin-left: 0; width: 100%; }
+}
