@@ -164,7 +164,6 @@ function montarForms(ctx) {
         { name: 'farda_corte', label: 'Farda: modelo', type: 'select', options: [['', 'Não informado'], ['feminino', 'Feminino'], ['masculino', 'Masculino']], hint: 'Define a grade. O tamanho abaixo precisa ser da mesma grade.' },
         { name: 'farda_tamanho', label: 'Farda: tamanho', type: 'select', options: [['', 'Não informado'], ['PPBL', 'PPBL (feminino)'], ['PBL', 'PBL (feminino)'], ['MBL', 'MBL (feminino)'], ['GBL', 'GBL (feminino)'], ['GGBL', 'GGBL (feminino)'], ['XGBL', 'XGBL (feminino)'], ['XGGBL', 'XGGBL (feminino)'], ['PP', 'PP (masculino)'], ['P', 'P (masculino)'], ['M', 'M (masculino)'], ['G', 'G (masculino)'], ['GG', 'GG (masculino)'], ['XG', 'XG (masculino)'], ['XGG', 'XGG (masculino)']], hint: 'Normalmente quem preenche é a própria pessoa, no celular. Use aqui para corrigir ou para lançar por quem não tem acesso.' },
         { name: 'farda_gola', label: 'Farda: gola', type: 'select', options: [['', 'Não informado'], ['polo', 'Gola polo'], ['t-shirt', 'T-shirt']] },
-        { name: 'farda_baby_look', label: 'Farda: baby look', type: 'boolean', emptyAs: false },
         { name: 'farda_nome', label: 'Farda: nome nas costas', type: 'text', maxlength: 24, hint: 'Um nome e, no máximo, uma inicial. Ex.: Maria S.' },
       ],
     },
@@ -298,7 +297,7 @@ export function createEditor(ctx) {
     }
     if (field.type === 'boolean') {
       // Coluna que aceita nulo precisa dizer para que lado ela cai vazia:
-      // `farda_baby_look` sem resposta é "Não", e não "Sim".
+      // sem `emptyAs`, um registro antigo com nulo abriria marcado como "Sim".
       const vazio = field.emptyAs === false ? 'false' : 'true';
       const marcado = value === '' ? vazio : (value === 'false' ? 'false' : 'true');
       return `<label for="${id}">${escapeHtml(field.label)}<select id="${id}" name="${field.name}"><option value="true"${marcado === 'true' ? ' selected' : ''}>Sim</option><option value="false"${marcado === 'false' ? ' selected' : ''}>Não</option></select>${hint}</label>`;

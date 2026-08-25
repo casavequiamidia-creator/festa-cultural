@@ -156,7 +156,7 @@ Endereço separado, com `noindex`, **não linkado** no site do visitante — só
     - **Gola:** polo ou t-shirt. A opção polo mostra o adicional (`farda_adicional_polo`) na própria etiqueta.
     - **Modelo:** feminino ou masculino — é essa escolha que define a grade exibida logo abaixo.
     - **Tamanho:** os sete da grade escolhida, com a tabela de medidas em centímetros ao lado. `GG`, `XG` e `XGG` (e os `BL` equivalentes) mostram o adicional (`farda_adicional_tamanho`) na etiqueta e na coluna *Adicional* da tabela.
-    - **Baby look:** sim ou não.
+    - **Baby look não é perguntado:** `farda_baby_look` é derivado de `farda_corte`, porque a grade feminina já é a baby look. A coluna continua no banco para a confecção ler no pedido.
     - **A conta:** ao pé do formulário, o valor discriminado (tecido + adicionais) e o total, atualizado a cada escolha. Depois de salvar, um bloco verde diz **quanto enviar no PIX**, com o botão que copia a chave e o prazo de pagamento.
   - *Quem já preencheu:* lista com o nome de cadastro, o resumo das escolhas e o selo **A pagar** (vermelho) ou **Pago** (verde), além do prazo de pagamento.
 - **Aba Contribuição:** texto de abertura, prazo, botão que copia a chave PIX exibindo *"Chave PIX copiada. Confira — Banco: X · Beneficiário: Y."*, e a lista dos funcionários com o setor ao lado do nome, o valor e o mesmo par de selos.

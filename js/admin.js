@@ -127,7 +127,7 @@ function totalDaFarda(pessoa) {
 function resumoFarda(pessoa) {
   const tecido = state.farda_tecidos.find((item) => String(item.id) === String(pessoa.farda_tecido_id));
   const total = totalDaFarda(pessoa);
-  const partes = [tecido ? tecido.nome : null, GOLAS[pessoa.farda_gola], CORTES[pessoa.farda_corte], pessoa.farda_tamanho ? `Tamanho ${pessoa.farda_tamanho}` : null, pessoa.farda_baby_look ? 'Baby look' : null, pessoa.farda_nome ? `Costas: ${pessoa.farda_nome}` : null].filter(Boolean);
+  const partes = [tecido ? tecido.nome : null, GOLAS[pessoa.farda_gola], CORTES[pessoa.farda_corte], pessoa.farda_tamanho ? `Tamanho ${pessoa.farda_tamanho}` : null, pessoa.farda_nome ? `Costas: ${pessoa.farda_nome}` : null].filter(Boolean);
   if (total > 0) partes.push(`Total ${formatMoney(total)}`);
   return partes.length ? partes.join(' · ') : 'Farda não informada';
 }

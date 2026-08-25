@@ -1421,6 +1421,20 @@ body.modo-organizador .site-shell { margin-top: 58px; }
 .escolha-extra { color: var(--gold); font-size: .74rem; font-weight: 700; }
 .escolha.is-ativa .escolha-extra { color: #fff2e2; }
 
+/* Espaço reservado de foto: com o rótulo dentro, para não parecer imagem
+   quebrada enquanto a organização não envia a arte. */
+.equipe-body .image-placeholder, .tecido-dialog .image-placeholder {
+  align-items: center;
+  color: var(--muted-deep);
+  display: flex;
+  font-size: .76rem;
+  font-weight: 700;
+  justify-content: center;
+  line-height: 1.4;
+  padding: 12px;
+  text-align: center;
+}
+
 /* --- Grade de tecidos ---------------------------------------------------- */
 .tecido-grade { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 .tecido-card { background: #141416; border: 1px solid #313035; border-radius: 15px; display: flex; flex-direction: column; overflow: hidden; transition: border-color .16s ease; }

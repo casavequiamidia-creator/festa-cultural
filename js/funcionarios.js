@@ -150,10 +150,12 @@ function modeloEscolhido() {
   return ranking[0]?.votos > 0 ? ranking[0].modelo : null;
 }
 
-function renderImagem(url, alt, classe) {
+// Sem foto o espaço reservado diz por que está vazio. Um retângulo mudo
+// parecia imagem quebrada, e quem abria a página achava que era erro.
+function renderImagem(url, alt, classe, vazio = 'Foto ainda não enviada') {
   return url
     ? `<img class="${classe}" src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" loading="lazy" />`
-    : `<div class="${classe} image-placeholder" role="img" aria-label="Sem foto de ${escapeHtml(alt)}"></div>`;
+    : `<div class="${classe} image-placeholder" role="img" aria-label="Sem foto de ${escapeHtml(alt)}"><span>${escapeHtml(vazio)}</span></div>`;
 }
 
 /* ------------------------------------------------------------------ *
@@ -307,7 +309,6 @@ function iniciarRascunho() {
     farda_gola: eu?.farda_gola || '',
     farda_corte: eu?.farda_corte || '',
     farda_tamanho: eu?.farda_tamanho || '',
-    farda_baby_look: eu?.farda_baby_look === true,
     farda_tecido_id: eu?.farda_tecido_id || '',
   };
 }
@@ -341,7 +342,6 @@ function renderMinhaFarda() {
         <span class="field-label">Tamanho</span>
         ${blocoDeTamanhos()}
       </div>
-      <div class="campo"><span class="field-label">Baby look</span>${escolhas('farda_baby_look', [['sim', 'Sim'], ['nao', 'Não']], rascunho.farda_baby_look ? 'sim' : 'nao')}</div>
       ${blocoDoValor()}
       <button class="primary-button" type="button" id="salvar-farda">Salvar minha farda</button>
       <p id="farda-feedback" class="feedback" role="status" aria-live="polite"></p>
@@ -369,7 +369,6 @@ function resumoFarda(pessoa) {
   if (pessoa.farda_gola) partes.push((GOLAS.find(([valor]) => valor === pessoa.farda_gola) || [, pessoa.farda_gola])[1]);
   if (pessoa.farda_corte) partes.push((CORTES.find(([valor]) => valor === pessoa.farda_corte) || [, pessoa.farda_corte])[1]);
   if (pessoa.farda_tamanho) partes.push(`Tamanho ${pessoa.farda_tamanho}`);
-  if (pessoa.farda_baby_look) partes.push('Baby look');
   if (pessoa.farda_nome) partes.push(`Costas: ${pessoa.farda_nome}`);
   const { total } = valorDaFarda(pessoa);
   if (total > 0) partes.push(`Total ${formatMoney(total)}`);
@@ -606,7 +605,6 @@ async function salvarFarda(botao) {
     p_gola: rascunho.farda_gola,
     p_corte: rascunho.farda_corte,
     p_tamanho: rascunho.farda_tamanho,
-    p_baby_look: rascunho.farda_baby_look,
     p_tecido_id: rascunho.farda_tecido_id ? Number(rascunho.farda_tecido_id) : null,
   });
   botao.disabled = false;
@@ -688,7 +686,7 @@ document.addEventListener('click', (event) => {
   const escolha = event.target.closest('.escolha');
   if (escolha) {
     const { campo, valor } = escolha.dataset;
-    rascunho[campo] = campo === 'farda_baby_look' ? valor === 'sim' : valor;
+    rascunho[campo] = valor;
     // Trocar de grade invalida o tamanho anterior: "feminino tamanho M"
     // mandaria o molde errado para a confecção.
     if (campo === 'farda_corte' && !naGrade(valor, rascunho.farda_tamanho)) rascunho.farda_tamanho = '';
