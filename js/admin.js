@@ -94,6 +94,8 @@ function renderCandidates() {
 }
 
 const CARGOS = { gestao: 'Gestão', professores: 'Professores', aee: 'AEE', administrativo: 'Administrativo', transporte: 'Transporte', apoio: 'Apoio' };
+// Zero é isenção declarada; nulo é valor que ninguém definiu ainda.
+const isento = (pessoa) => pessoa.contribuicao_valor !== null && Number(pessoa.contribuicao_valor) === 0;
 const GOLAS = { polo: 'Gola polo', 't-shirt': 'T-shirt' };
 const CORTES = { masculino: 'Masculino', feminino: 'Feminino' };
 
@@ -134,14 +136,14 @@ function resumoFarda(pessoa) {
 
 function pagamentoControles(pessoa) {
   const botao = (campo, rotulo, pago) => `<button class="selected ${pago ? 'is-pago' : 'is-devendo'}" type="button" data-func-pago="${pessoa.id}|${campo}|${pago ? 'false' : 'true'}">${rotulo}: ${pago ? 'pago' : 'a pagar'}</button>`;
-  return `<div class="status-controls pgto-controles">${botao('contribuicao_paga', 'Contribuição', pessoa.contribuicao_paga)}${pessoa.farda_tamanho ? botao('farda_paga', 'Farda', pessoa.farda_paga) : ''}</div>`;
+  return `<div class="status-controls pgto-controles">${isento(pessoa) ? '' : botao('contribuicao_paga', 'Contribuição', pessoa.contribuicao_paga)}${pessoa.farda_tamanho ? botao('farda_paga', 'Farda', pessoa.farda_paga) : ''}</div>`;
 }
 
 function renderFuncionarios() {
   const total = state.funcionarios.length;
   $('#funcionario-count').textContent = `${total} ${total === 1 ? 'pessoa' : 'pessoas'}`;
   $('#admin-funcionarios').innerHTML = total
-    ? state.funcionarios.map((pessoa) => `<article class="admin-row"><div class="row-main"><h3>${escapeHtml(pessoa.nome)}</h3><p><span class="cargo-chip">${escapeHtml(CARGOS[pessoa.cargo] || pessoa.cargo)}</span>${pessoa.contribuicao_valor != null ? formatMoney(pessoa.contribuicao_valor) : 'Contribuição a definir'}</p><p>${escapeHtml(resumoFarda(pessoa))}</p></div><div class="row-actions">${pagamentoControles(pessoa)}${editButton('funcionarios', pessoa.id)}</div></article>`).join('')
+    ? state.funcionarios.map((pessoa) => `<article class="admin-row"><div class="row-main"><h3>${escapeHtml(pessoa.nome)}</h3><p><span class="cargo-chip">${escapeHtml(CARGOS[pessoa.cargo] || 'Setor a definir')}</span>${isento(pessoa) ? 'Sem cobrança' : (pessoa.contribuicao_valor != null ? formatMoney(pessoa.contribuicao_valor) : 'Contribuição a definir')}</p><p>${escapeHtml(resumoFarda(pessoa))}</p></div><div class="row-actions">${pagamentoControles(pessoa)}${editButton('funcionarios', pessoa.id)}</div></article>`).join('')
     : '<p class="muted">Ninguém entrou na página da equipe ainda. Os nomes aparecem aqui sozinhos conforme cada um se identifica.</p>';
 }
 

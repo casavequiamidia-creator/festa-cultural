@@ -1389,6 +1389,8 @@ body.modo-organizador .site-shell { margin-top: 58px; }
 .pgto-selo { border-radius: 999px; flex: 0 0 auto; font-size: .76rem; font-weight: 800; letter-spacing: .04em; padding: 8px 14px; }
 .pgto-selo.is-pago { background: rgba(0, 199, 107, .14); border: 1px solid var(--green); color: #7dfab5; }
 .pgto-selo.is-devendo { background: rgba(236, 113, 102, .14); border: 1px solid var(--red); color: #ffaaa2; }
+/* Isento não é dívida nem pagamento: selo neutro, sem verde nem vermelho. */
+.pgto-selo.is-isento { background: #211f22; border: 1px solid #4a444a; color: var(--muted); }
 
 .equipe-voltar { color: #a8a6aa; display: inline-block; font-size: .85rem; font-weight: 700; margin-top: 26px; text-decoration: none; }
 .equipe-voltar:hover { color: var(--orange-bright); }

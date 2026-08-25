@@ -43,8 +43,9 @@ const CARGOS = [
   ['transporte', 'Transporte'],
   ['apoio', 'Apoio'],
 ];
-const cargoLabel = (valor) => (CARGOS.find(([chave]) => chave === valor) || [, 'Apoio'])[1];
-const cargoOrdem = (valor) => { const posicao = CARGOS.findIndex(([chave]) => chave === valor); return posicao < 0 ? CARGOS.length : posicao; };
+const cargoLabel = (valor) => (CARGOS.find(([chave]) => chave === valor) || [, 'Setor a definir'])[1];
+// Zero é isenção declarada pela organização; nulo é valor que ninguém definiu.
+const isento = (pessoa) => pessoa.contribuicao_valor !== null && Number(pessoa.contribuicao_valor) === 0;
 
 const GOLAS = [['polo', 'Gola polo'], ['t-shirt', 'T-shirt']];
 const CORTES = [['feminino', 'Feminino'], ['masculino', 'Masculino']];
@@ -418,17 +419,19 @@ function renderContribuicaoTopo() {
 }
 
 function renderContribuicaoLista() {
-  const pessoas = [...state.funcionarios].sort((a, b) => cargoOrdem(a.cargo) - cargoOrdem(b.cargo) || a.nome.localeCompare(b.nome, 'pt-BR'));
-  const pagas = pessoas.filter((pessoa) => pessoa.contribuicao_paga).length;
+  const pessoas = [...state.funcionarios].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+  const cobrados = pessoas.filter((pessoa) => !isento(pessoa));
+  const pagas = cobrados.filter((pessoa) => pessoa.contribuicao_paga).length;
+  const resumo = `${pessoas.length} ${pessoas.length === 1 ? 'pessoa' : 'pessoas'}${cobrados.length ? ` · ${pagas} de ${cobrados.length} ${pagas === 1 ? 'pagou' : 'pagaram'}` : ''}`;
   $('#contribuicao-lista').innerHTML = `<section class="equipe-bloco is-aberto">
     <div class="equipe-bloco-topo is-fixo">
-      <span><strong>Funcionários da escola</strong><small>${pessoas.length} ${pessoas.length === 1 ? 'pessoa' : 'pessoas'}${pessoas.length ? ` · ${pagas} ${pagas === 1 ? 'pagou' : 'pagaram'}` : ''}</small></span>
+      <span><strong>Funcionários da escola</strong><small>${resumo}</small></span>
     </div>
     <div class="equipe-bloco-corpo">
       ${pessoas.length
         ? `<ul class="equipe-lista">${pessoas.map((pessoa) => `<li class="equipe-linha${state.eu && Number(pessoa.id) === Number(state.eu.id) ? ' sou-eu' : ''}">
-            <div><strong>${escapeHtml(pessoa.nome)}</strong><small><span class="cargo-chip">${escapeHtml(cargoLabel(pessoa.cargo))}</span>${pessoa.contribuicao_valor != null ? ` ${formatMoney(pessoa.contribuicao_valor)}` : ' Valor a definir'}</small></div>
-            ${selo(pessoa.contribuicao_paga)}
+            <div><strong>${escapeHtml(pessoa.nome)}</strong><small><span class="cargo-chip">${escapeHtml(cargoLabel(pessoa.cargo))}</span>${isento(pessoa) ? '' : (pessoa.contribuicao_valor != null ? ` ${formatMoney(pessoa.contribuicao_valor)}` : ' Valor a definir')}</small></div>
+            ${isento(pessoa) ? '<span class="pgto-selo is-isento">Sem cobrança</span>' : selo(pessoa.contribuicao_paga)}
           </li>`).join('')}</ul>`
         : emptyState('Ninguém se cadastrou ainda. Assim que a equipe entrar, os nomes aparecem aqui.')}
     </div>

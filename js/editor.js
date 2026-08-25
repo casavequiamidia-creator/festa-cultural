@@ -153,11 +153,11 @@ function montarForms(ctx) {
     },
     funcionarios: {
       titulo: 'funcionário',
-      padrao: { cargo: 'apoio' },
+      padrao: {},
       campos: [
         { name: 'nome', label: 'Nome completo', type: 'text', required: true, maxlength: 90, hint: 'É por este nome que a pessoa entra na página da equipe.' },
-        { name: 'cargo', label: 'Setor na escola', type: 'select', required: true, options: [['gestao', 'Gestão'], ['professores', 'Professores'], ['aee', 'AEE'], ['administrativo', 'Administrativo'], ['transporte', 'Transporte'], ['apoio', 'Apoio']] },
-        { name: 'contribuicao_valor', label: 'Contribuição (R$)', type: 'number', step: '0.01', min: '0', hint: 'Vazio aparece como "Valor a definir" na lista.' },
+        { name: 'cargo', label: 'Setor na escola', type: 'select', options: [['', 'A definir'], ['gestao', 'Gestão'], ['professores', 'Professores'], ['aee', 'AEE'], ['administrativo', 'Administrativo'], ['transporte', 'Transporte'], ['apoio', 'Apoio']], hint: 'Pode deixar em branco: a própria pessoa escolhe o setor dela ao entrar na página da equipe.' },
+        { name: 'contribuicao_valor', label: 'Contribuição (R$)', type: 'number', step: '0.01', min: '0', hint: 'Vazio aparece como "Valor a definir". Zero marca a pessoa como isenta ("Sem cobrança").' },
         { name: 'contribuicao_paga', label: 'Contribuição paga', type: 'boolean', emptyAs: false },
         { name: 'farda_paga', label: 'Farda paga', type: 'boolean', emptyAs: false },
         { name: 'farda_tecido_id', label: 'Farda: tecido', type: 'select', numeric: true, options: () => [['', 'Não informado'], ...(ctx.getTecidos?.() || []).map((tecido) => [String(tecido.id), tecido.nome])] },
