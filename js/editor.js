@@ -16,6 +16,44 @@ const BUCKET = 'festa';
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[char]));
 const shortTime = (value) => value ? String(value).slice(0, 5) : '';
 
+/* ------------------------------------------------------------------ *
+ * Links colados por quem está no meio da festa
+ *
+ * Ninguém digita `https://` no celular. O organizador cola o que o aplicativo
+ * deu a ele — `@fulana`, `instagram.com/fulana`, o número do WhatsApp — e o
+ * campo guarda sempre um endereço https completo, que é o que o banco aceita
+ * e o que o visitante precisa para o link funcionar.
+ * ------------------------------------------------------------------ */
+const PERFIL_DA_REDE = { whatsapp: 'https://wa.me/', instagram: 'https://instagram.com/', facebook: 'https://facebook.com/', tiktok: 'https://tiktok.com/@' };
+
+// "site.com/algo" coladas sem esquema — só ganham https:// na frente.
+const pareceEndereco = (valor) => /^[\w-]+(\.[\w-]+)+(\/|$)/.test(valor);
+
+export function normalizarLink(bruto) {
+  const valor = String(bruto || '').trim();
+  if (!valor) return null;
+  if (/^https?:\/\//i.test(valor)) return valor;
+  // Qualquer outro esquema (javascript:, data:) é recusado em vez de virar link.
+  if (/^[a-z][a-z0-9+.-]*:/i.test(valor)) return null;
+  return pareceEndereco(valor) ? `https://${valor}` : null;
+}
+
+export function normalizarRede(rede) {
+  return (bruto) => {
+    const valor = String(bruto || '').trim();
+    if (!valor) return null;
+    if (rede === 'whatsapp' && !/^https?:\/\//i.test(valor)) {
+      const digitos = valor.replace(/\D/g, '');
+      return digitos.length >= 10 ? `https://wa.me/${digitos}` : null;
+    }
+    // Com barra é o endereço copiado do aplicativo. Sem barra é nome de
+    // usuário — `fulana.silva` é apelido de gente, não domínio de site.
+    if (valor.includes('/') || /^[a-z][a-z0-9+.-]*:/i.test(valor)) return normalizarLink(valor);
+    const usuario = valor.replace(/^@/, '').replace(/[^\w.]/g, '');
+    return usuario ? `${PERFIL_DA_REDE[rede]}${usuario}` : null;
+  };
+}
+
 // Tabelas cujo conteúdo pertence a uma festa específica.
 export const ESCOPADAS = new Set(['produtos', 'sorteios', 'cronograma', 'candidatas', 'avisos']);
 export const SEM_PERMISSAO = 'Nada foi gravado. Sua conta está fora da allowlist de organizadores — peça para incluírem seu usuário na tabela private.organizadores pelo SQL Editor.';
@@ -27,6 +65,7 @@ export function describeError(error) {
   if (code === 'PGRST204' || code === '42703') return `${error.message} — o banco está sem as migrations mais recentes. Rode os arquivos de supabase/migrations no SQL Editor.`;
   if (code === '42P01' || code === 'PGRST205') return `${error.message} — tabela ausente. Rode as migrations no SQL Editor.`;
   if (code === '42501' || code === 'PGRST301') return SEM_PERMISSAO;
+  if (code === '23514') return `${error.message} — algum campo saiu do formato que o banco aceita. Confira os links (precisam começar com https://) e os campos numéricos.`;
   return error?.message || 'Erro desconhecido.';
 }
 
@@ -80,6 +119,14 @@ function montarForms(ctx) {
         { name: 'detalhes', label: 'Turma / detalhes', type: 'text', maxlength: 120, hint: 'Ex.: Representante do 9º Ano A' },
         { name: 'foto_url', label: 'Foto da candidata', type: 'image' },
         { name: 'horario_desfile', label: 'Horário do desfile', type: 'time' },
+        { name: 'biografia', label: 'Biografia', type: 'textarea', rows: 7, maxlength: 1500, hint: 'A candidata falando dela mesma: de onde vem, o que gosta de fazer, por que resolveu concorrer. Aparece na aba Biografia do perfil.' },
+        { name: 'whatsapp', label: 'WhatsApp da candidata', type: 'text', maxlength: 200, transform: normalizarRede('whatsapp'), hint: 'Número com DDI e DDD (ex.: 5568999999999) ou o link do wa.me. Vazio = sem o botão.' },
+        { name: 'instagram', label: 'Instagram', type: 'text', maxlength: 200, transform: normalizarRede('instagram'), hint: '@usuario ou o link do perfil.' },
+        { name: 'facebook', label: 'Facebook', type: 'text', maxlength: 200, transform: normalizarRede('facebook'), hint: 'Nome de usuário ou o link do perfil.' },
+        { name: 'tiktok', label: 'TikTok', type: 'text', maxlength: 200, transform: normalizarRede('tiktok'), hint: '@usuario ou o link do perfil.' },
+        { name: 'rifa_titulo', label: 'Rifa online: título', type: 'text', maxlength: 80, hint: 'Ex.: Rifa da cesta de café da manhã.' },
+        { name: 'rifa_descricao', label: 'Rifa online: detalhes', type: 'textarea', maxlength: 240, hint: 'Prêmio, valor do número e quando será o sorteio.' },
+        { name: 'rifa_url', label: 'Rifa online: link', type: 'text', maxlength: 300, transform: normalizarLink, hint: 'Endereço onde o visitante compra o número. Sem link preenchido, a aba Rifa fica com o aviso de que ainda não há rifa.' },
       ],
     },
     eventos: {
@@ -240,6 +287,9 @@ export function createEditor(ctx) {
       if (!element) return;
       const raw = String(element.value ?? '').trim();
       if (raw === '') { values[field.name] = field.type === 'boolean' ? true : (field.emptyAs !== undefined ? field.emptyAs : null); return; }
+      // Campos de link guardam sempre um endereço https completo, monte-o o
+      // organizador de nome de usuário, de número ou de link colado.
+      if (field.transform) { values[field.name] = field.transform(raw); return; }
       if (field.type === 'boolean') { values[field.name] = raw === 'true'; return; }
       if (field.type === 'number') { const parsed = Number(raw); values[field.name] = Number.isFinite(parsed) ? parsed : null; return; }
       // sorteio_id é um select de texto, mas a coluna é numérica.
@@ -253,6 +303,13 @@ export function createEditor(ctx) {
     if (!atual) return;
     const { table, id } = atual;
     const values = collectValues(table);
+    // Um link que a normalização não entendeu vira null e apagaria o campo em
+    // silêncio. Melhor devolver a digitação para o organizador corrigir.
+    const recusado = FORMS[table].campos.find((field) => field.transform && String($d(`#f-${field.name}`)?.value ?? '').trim() !== '' && values[field.name] === null);
+    if (recusado) {
+      aviso(`Não deu para entender o que está em "${recusado.label}". Cole o link completo (começando com https://) ou só o nome de usuário.`, true);
+      return;
+    }
     // O banco recusa a promoção pela metade; avisamos antes de gastar a viagem.
     if (table === 'sorteios' && (values.cartelas_promo_qtd === null) !== (values.cartelas_promo_valor === null)) {
       aviso('Preencha a quantidade e o valor da promoção juntos, ou deixe os dois vazios.', true);

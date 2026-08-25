@@ -120,7 +120,7 @@
 
         <section class="screen" id="rainha" data-screen="rainha" hidden>
           <div class="section-header"><div><p class="kicker">Nossa realeza</p><h2>Rainha Caipira</h2></div><i class="section-icon" data-lucide="crown"></i></div>
-          <p class="lead compact">Conheça as candidatas e acompanhe o desfile para a entrega da faixa.</p><div id="candidates-list" class="candidate-grid" aria-live="polite"></div>
+          <p class="lead compact">Conheça as candidatas, abra o perfil de cada uma e acompanhe o desfile para a entrega da faixa.</p><div id="candidates-list" class="candidate-grid" aria-live="polite"></div>
         </section>
 
         <section class="screen" id="barracas" data-screen="barracas" hidden>
@@ -140,6 +140,8 @@
       <span class="order-bar-go" aria-hidden="true">›</span>
     </button>
     <a id="help-button" class="help-button" href="#" target="_blank" rel="noopener" aria-label="Falar com a organização pelo WhatsApp">?</a>
+    <!-- Perfil da candidata. O conteúdo é montado em js/app.js a cada abertura. -->
+    <dialog id="candidate-profile" class="profile-dialog" aria-labelledby="profile-name"></dialog>
     <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
     <script type="module" src="./app.js"></script>
   </body>

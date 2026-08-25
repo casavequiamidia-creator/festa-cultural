@@ -51,6 +51,10 @@ Para garantir o funcionamento em tempo real, as seguintes tabelas precisam ser c
 - `detalhes`: text (Ex: "Representante do 6º Ano A")
 - `foto_url`: text
 - `horario_desfile`: time
+- `idade`: int2 (opcional, exibida no card)
+- `biografia`: text (a candidata falando dela mesma; vira a aba Biografia do perfil)
+- `whatsapp` / `instagram` / `facebook` / `tiktok`: text (endereço https completo; o painel converte `@usuario` ou número de telefone em link)
+- `rifa_titulo`, `rifa_descricao`, `rifa_url`: text (rifa online da candidata, exibida na aba Rifa online do perfil)
 
 ---
 
@@ -99,6 +103,12 @@ O site será uma Single Page Application (SPA) simples ou um conjunto de página
 #### 👑 3.5. Tela: Rainha Caipira
 - Apresentação em formato de galeria com os cards das candidatas.
 - Cada card contém Foto, Nome, Série/Turma representada, detalhes e o horário marcado para o desfile e entrega da faixa.
+- **Perfil da candidata:** o botão "Ver perfil" abre uma janela sobre a tela com a foto em destaque, os dados da candidata e:
+  - **Redes sociais:** logos de WhatsApp, Instagram, Facebook e TikTok, cada uma ancorada ao endereço cadastrado pela organização. Só aparece a logo da rede preenchida.
+  - **Aba Biografia:** o texto em que a própria candidata se apresenta.
+  - **Aba Rifa online:** título, detalhes e o botão que leva ao link onde a candidata vende os números da rifa dela.
+  - **Compartilhar perfil:** usa o menu nativo do celular (`navigator.share`) e, onde ele não existe, copia o link. O endereço compartilhado é `/<festa>?candidata=<id>`, que abre o site já com o perfil na tela.
+- Todos esses campos são editados pela conta da organização — no painel ou pelo modo "ver como visitante", tocando em **Editar** no card da candidata.
 
 #### 🎯 3.6. Tela: Barracas & Brincadeiras
 - Lista das atividades disponíveis (Pescaria, Canaleta, Cadeia, Correio Elegante).

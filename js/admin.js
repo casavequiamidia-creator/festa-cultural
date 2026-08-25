@@ -71,10 +71,23 @@ function renderDrawList() {
     : '<p class="muted">Nenhum sorteio cadastrado.</p>';
 }
 
+// O que o perfil público já tem preenchido. Sem isso o organizador só
+// descobriria a biografia faltando abrindo candidata por candidata.
+const REDES_DA_CANDIDATA = ['whatsapp', 'instagram', 'facebook', 'tiktok'];
+function perfilResumo(candidate) {
+  const redes = REDES_DA_CANDIDATA.filter((campo) => candidate[campo]).length;
+  const partes = [
+    candidate.biografia ? 'biografia ✓' : 'sem biografia',
+    redes ? `${redes} ${redes === 1 ? 'rede' : 'redes'}` : 'sem redes',
+    candidate.rifa_url ? 'rifa online ✓' : 'sem rifa online',
+  ];
+  return `<p class="row-perfil">Perfil: ${escapeHtml(partes.join(' · '))}</p>`;
+}
+
 function renderCandidates() {
   $('#candidate-count').textContent = `${state.candidatas.length} ${state.candidatas.length === 1 ? 'candidata' : 'candidatas'}`;
   $('#admin-candidates').innerHTML = state.candidatas.length
-    ? state.candidatas.map((candidate) => `<article class="admin-row">${thumb(candidate.foto_url)}<div class="row-main"><h3>${escapeHtml(candidate.nome)}</h3><p>${candidate.idade ? `${candidate.idade} anos · ` : ''}${escapeHtml(candidate.detalhes || 'Sem detalhes')}${candidate.horario_desfile ? ` · ${shortTime(candidate.horario_desfile)}` : ''}</p></div><div class="row-actions">${editButton('candidatas', candidate.id)}</div></article>`).join('')
+    ? state.candidatas.map((candidate) => `<article class="admin-row">${thumb(candidate.foto_url)}<div class="row-main"><h3>${escapeHtml(candidate.nome)}</h3><p>${candidate.idade ? `${candidate.idade} anos · ` : ''}${escapeHtml(candidate.detalhes || 'Sem detalhes')}${candidate.horario_desfile ? ` · ${shortTime(candidate.horario_desfile)}` : ''}</p>${perfilResumo(candidate)}</div><div class="row-actions">${editButton('candidatas', candidate.id)}</div></article>`).join('')
     : '<p class="muted">Nenhuma candidata cadastrada.</p>';
 }
 

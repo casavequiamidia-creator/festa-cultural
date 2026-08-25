@@ -1051,3 +1051,189 @@ body.modo-organizador .site-shell { margin-top: 58px; }
   .admin-bar-acoes { margin-left: auto; }
   body.modo-organizador .site-shell { margin-top: 96px; }
 }
+
+/* ==========================================================================
+   Perfil da candidata a Rainha Caipira.
+
+   O card da galeria ganhou o botão "Ver perfil"; o perfil em si é um <dialog>
+   que abre por cima da festa, com a foto grande, as redes da candidata, as
+   abas de Biografia e Rifa online, e o botão de compartilhar.
+   ========================================================================== */
+.candidate-body .secondary-button { margin-top: 15px; }
+.candidate-card strong { display: block; }
+/* Painel: o que cada perfil já tem preenchido. */
+.row-perfil { color: var(--muted-deep); font-size: .73rem; margin: 4px 0 0; }
+
+.profile-dialog {
+  background: transparent;
+  border: 0;
+  margin: auto;
+  max-height: 92vh;
+  max-width: 560px;
+  overflow: visible;
+  padding: 0;
+  width: min(560px, calc(100vw - 24px));
+}
+.profile-dialog::backdrop { backdrop-filter: blur(4px); background: rgba(0, 0, 0, .76); }
+
+.profile-card {
+  background: linear-gradient(160deg, #1b1b1b, #101010);
+  border: 1px solid #3d3630;
+  border-radius: 26px;
+  box-shadow: var(--shadow);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  max-height: 92vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* Fora do .profile-card, que é quem rola: dentro dele o botão sumia assim que
+   o visitante descia a biografia. */
+.profile-close {
+  align-items: center;
+  backdrop-filter: blur(6px);
+  background: rgba(10, 10, 10, .62);
+  border: 1px solid #4d4640;
+  border-radius: 50%;
+  color: #f3efec;
+  display: flex;
+  font-size: 1.6rem;
+  height: 44px;
+  justify-content: center;
+  line-height: 0;
+  padding-bottom: 4px;
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  width: 44px;
+  z-index: 3;
+}
+.profile-close:hover { background: #8d3f24; border-color: var(--orange); }
+
+/* --- Cabeçalho: foto com o nome por cima -------------------------------- */
+.profile-head { position: relative; }
+.profile-photo {
+  border-radius: 25px 25px 0 0;
+  display: block;
+  height: 330px;
+  object-fit: cover;
+  width: 100%;
+}
+.profile-id {
+  background: linear-gradient(180deg, transparent, rgba(8, 8, 8, .55) 38%, rgba(8, 8, 8, .96));
+  border-radius: 0 0 0 0;
+  bottom: 0;
+  left: 0;
+  padding: 74px 22px 20px;
+  position: absolute;
+  right: 0;
+}
+.profile-id .candidate-crown { display: block; line-height: 1; }
+.profile-id h2 { font-size: clamp(1.9rem, 7vw, 2.5rem); margin: 4px 0 8px; }
+.profile-id .candidate-age { margin-bottom: 6px; }
+.profile-id p { color: #ded9d6; font-size: .92rem; margin: 0 0 6px; }
+.profile-id strong { color: var(--gold); font-size: .82rem; }
+
+/* --- Redes da candidata -------------------------------------------------- */
+.profile-social {
+  border-bottom: 1px solid #2b2724;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  padding: 18px 22px;
+}
+.social-link {
+  align-items: center;
+  background: #191919;
+  border: 1px solid #3b3733;
+  border-radius: 16px;
+  color: #d9d5d1;
+  display: inline-flex;
+  height: 52px;
+  justify-content: center;
+  transition: .18s ease;
+  width: 52px;
+}
+.social-link svg { fill: currentColor; height: 25px; width: 25px; }
+.social-link:hover, .social-link:focus-visible { color: #fff; transform: translateY(-2px); }
+.social-link.is-whatsapp:hover, .social-link.is-whatsapp:focus-visible { background: #1da851; border-color: #25d366; }
+.social-link.is-instagram:hover, .social-link.is-instagram:focus-visible { background: linear-gradient(45deg, #f09433, #dc2743 52%, #bc1888); border-color: #e6683c; }
+.social-link.is-facebook:hover, .social-link.is-facebook:focus-visible { background: #1877f2; border-color: #4293ff; }
+.social-link.is-tiktok:hover, .social-link.is-tiktok:focus-visible { background: #111; border-color: #ff0050; box-shadow: -3px 0 0 -1px #25f4ee inset, 3px 0 0 -1px #ff0050 inset; }
+
+/* --- Abas ---------------------------------------------------------------- */
+.profile-tabs {
+  background: #131313;
+  border-bottom: 1px solid #2b2724;
+  display: flex;
+  gap: 6px;
+  padding: 12px 14px;
+}
+.profile-tab {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  color: #b3afab;
+  flex: 1;
+  font-size: .93rem;
+  font-weight: 700;
+  min-height: 46px;
+  padding: 0 12px;
+  transition: .18s ease;
+}
+.profile-tab:hover { color: var(--text); }
+.profile-tab.is-active {
+  background: linear-gradient(100deg, rgba(236, 117, 45, .2), rgba(236, 117, 45, .05));
+  border-color: var(--orange);
+  color: #ffd8b4;
+}
+
+.profile-panel { padding: 22px; }
+.profile-panel[hidden] { display: none; }
+.profile-bio p { color: #d5d1ce; font-size: 1rem; line-height: 1.65; margin: 0 0 14px; }
+.profile-bio p:last-child { margin-bottom: 0; }
+.profile-empty {
+  border: 1px dashed #4a4541;
+  border-radius: 15px;
+  color: var(--muted);
+  font-size: .92rem;
+  line-height: 1.6;
+  margin: 0;
+  padding: 22px;
+  text-align: center;
+}
+
+/* --- Rifa online --------------------------------------------------------- */
+.rifa-box { border: 1px solid #3a332c; border-radius: 17px; padding: 18px; }
+.rifa-box h3 { font-size: 1.3rem; margin: 0 0 8px; }
+.rifa-box p { color: var(--muted); font-size: .92rem; line-height: 1.6; margin: 0 0 16px; }
+.rifa-box .primary-button {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  min-height: 58px;
+  text-decoration: none;
+  width: 100%;
+}
+.rifa-nota { color: var(--muted-deep) !important; font-size: .8rem !important; margin: 14px 0 0 !important; }
+
+/* --- Rodapé -------------------------------------------------------------- */
+.profile-foot { border-top: 1px solid #2b2724; display: grid; gap: 10px; padding: 18px 22px 6px; }
+.profile-foot .primary-button { min-height: 58px; width: 100%; }
+.profile-foot .edit-chip { margin-top: 0; }
+.profile-card .feedback { margin: 0; padding: 0 22px 18px; }
+
+@media (max-width: 620px) {
+  .profile-dialog { max-height: 96vh; width: calc(100vw - 14px); }
+  .profile-card { max-height: 96vh; }
+  .profile-photo { height: 280px; }
+  .profile-id { padding: 62px 18px 18px; }
+  .profile-social, .profile-panel { padding: 16px 18px; }
+  .profile-foot { padding: 16px 18px 4px; }
+  .profile-card .feedback { padding: 0 18px 16px; }
+  .social-link { height: 48px; width: 48px; }
+  .social-link svg { height: 23px; width: 23px; }
+}
