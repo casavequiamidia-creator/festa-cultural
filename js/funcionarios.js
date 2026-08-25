@@ -173,7 +173,10 @@ function renderDestaque() {
   bloco.hidden = false;
   bloco.innerHTML = `<p class="section-label">Modelo escolhido</p>
     <h2>${escapeHtml(modelo.nome)}</h2>
-    ${renderImagem(modelo.imagem_url, modelo.nome, 'destaque-foto')}
+    <button class="modelo-lupa" type="button" data-modelo-foto="${modelo.id}" aria-label="Ver a arte de ${escapeHtml(modelo.nome)} em tamanho cheio">
+      ${renderImagem(modelo.imagem_url, modelo.nome, 'destaque-foto')}
+      <span class="modelo-ampliar" aria-hidden="true">Ampliar</span>
+    </button>
     ${modelo.descricao ? `<p class="destaque-nota">${escapeHtml(modelo.descricao)}</p>` : ''}
     <button class="primary-button" type="button" data-abrir-farda>${jaPreencheu ? 'Revisar seus dados' : 'Preencha seus dados'} <span aria-hidden="true">→</span></button>`;
 }
@@ -198,7 +201,10 @@ function cardDoModelo(modelo, encerrada) {
     : '<p class="voto-vazio">Ninguém votou neste modelo ainda.</p>';
   return `<article class="modelo-card${eMeuVoto ? ' is-meu' : ''}">
     <div class="modelo-media">
-      ${renderImagem(modelo.imagem_url, modelo.nome, 'modelo-foto')}
+      <button class="modelo-lupa" type="button" data-modelo-foto="${modelo.id}" aria-label="Ver a arte de ${escapeHtml(modelo.nome)} em tamanho cheio">
+        ${renderImagem(modelo.imagem_url, modelo.nome, 'modelo-foto')}
+        <span class="modelo-ampliar" aria-hidden="true">Ampliar</span>
+      </button>
       <span class="modelo-votos" title="${votantes.length} ${votantes.length === 1 ? 'voto' : 'votos'}">${votantes.length} ${votantes.length === 1 ? 'voto' : 'votos'}</span>
     </div>
     <div class="modelo-corpo">
@@ -267,6 +273,23 @@ function blocoDeTecidos() {
       <button class="tecido-detalhe" type="button" data-tecido-detalhe="${tecido.id}">Ver detalhes</button>
     </article>`;
   }).join('')}</div>`;
+}
+
+// A arte é um 1080x1080 com as quatro vistas do modelo; no card ela não passa
+// de uma miniatura, e é por ela que a pessoa decide o voto.
+function abrirModelo(id) {
+  const modelo = state.modelos.find((item) => Number(item.id) === Number(id));
+  const dialogo = $('#modelo-modal');
+  if (!modelo || !dialogo) return;
+  dialogo.innerHTML = `<button class="profile-close" type="button" data-fechar-modelo aria-label="Fechar a arte do modelo">×</button>
+    <figure class="modelo-lightbox">
+      ${renderImagem(modelo.imagem_url, `arte do ${modelo.nome}`, 'modelo-lightbox-foto')}
+      <figcaption>
+        <strong id="modelo-nome">${escapeHtml(modelo.nome)}</strong>
+        ${modelo.descricao ? `<span>${escapeHtml(modelo.descricao)}</span>` : ''}
+      </figcaption>
+    </figure>`;
+  if (!dialogo.open) dialogo.showModal();
 }
 
 function abrirTecido(id) {
@@ -671,6 +694,10 @@ document.addEventListener('click', (event) => {
     return;
   }
 
+  const verModelo = event.target.closest('[data-modelo-foto]');
+  if (verModelo) { abrirModelo(verModelo.dataset.modeloFoto); return; }
+  if (event.target.closest('[data-fechar-modelo]')) { $('#modelo-modal')?.close(); return; }
+
   const verTecido = event.target.closest('[data-tecido-detalhe]');
   if (verTecido) { abrirTecido(verTecido.dataset.tecidoDetalhe); return; }
 
@@ -713,6 +740,7 @@ document.addEventListener('input', (event) => {
 // Clique no fundo escuro fecha o modal do tecido: o <dialog> recebe o evento
 // quando o alvo é ele mesmo, e não o conteúdo.
 $('#tecido-modal')?.addEventListener('click', (event) => { if (event.target.id === 'tecido-modal') event.target.close(); });
+$('#modelo-modal')?.addEventListener('click', (event) => { if (event.target.id === 'modelo-modal') event.target.close(); });
 
 document.addEventListener('visibilitychange', () => { if (!document.hidden && state.evento) carregarTudo(); });
 window.addEventListener('online', () => { if (state.evento) carregarTudo(); });
