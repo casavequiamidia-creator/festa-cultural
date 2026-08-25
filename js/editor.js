@@ -55,7 +55,7 @@ export function normalizarRede(rede) {
 }
 
 // Tabelas cujo conteúdo pertence a uma festa específica.
-export const ESCOPADAS = new Set(['produtos', 'sorteios', 'cronograma', 'candidatas', 'avisos']);
+export const ESCOPADAS = new Set(['produtos', 'sorteios', 'cronograma', 'candidatas', 'avisos', 'funcionarios', 'farda_modelos']);
 export const SEM_PERMISSAO = 'Nada foi gravado. Sua conta está fora da allowlist de organizadores — peça para incluírem seu usuário na tabela private.organizadores pelo SQL Editor.';
 const SEM_LINHA = 'Nada foi gravado: este registro não existe mais. Alguém pode tê-lo excluído. Atualize a página.';
 
@@ -129,6 +129,31 @@ function montarForms(ctx) {
         { name: 'rifa_url', label: 'Rifa online: link', type: 'text', maxlength: 300, transform: normalizarLink, hint: 'Endereço onde o visitante compra o número. Sem link preenchido, a aba Rifa fica com o aviso de que ainda não há rifa.' },
       ],
     },
+    farda_modelos: {
+      titulo: 'modelo de farda',
+      padrao: {},
+      campos: [
+        { name: 'nome', label: 'Nome do modelo', type: 'text', required: true, maxlength: 60, hint: 'Curto, para a equipe citar na conversa. Ex.: Modelo 1 — laranja com gola preta.' },
+        { name: 'imagem_url', label: 'Foto do modelo', type: 'image' },
+        { name: 'descricao', label: 'Descrição', type: 'textarea', maxlength: 240, hint: 'Tecido, cores, detalhes. Aparece embaixo do nome no card da votação.' },
+      ],
+    },
+    funcionarios: {
+      titulo: 'funcionário',
+      padrao: { cargo: 'apoio' },
+      campos: [
+        { name: 'nome', label: 'Nome completo', type: 'text', required: true, maxlength: 90, hint: 'É por este nome que a pessoa entra na página da equipe.' },
+        { name: 'cargo', label: 'Setor na escola', type: 'select', required: true, options: [['gestao', 'Gestão'], ['professores', 'Professores'], ['aee', 'AEE'], ['administrativo', 'Administrativo'], ['transporte', 'Transporte'], ['apoio', 'Apoio']] },
+        { name: 'contribuicao_valor', label: 'Contribuição (R$)', type: 'number', step: '0.01', min: '0', hint: 'Vazio aparece como "Valor a definir" na lista.' },
+        { name: 'contribuicao_paga', label: 'Contribuição paga', type: 'boolean', emptyAs: false },
+        { name: 'farda_paga', label: 'Farda paga', type: 'boolean', emptyAs: false },
+        { name: 'farda_tamanho', label: 'Farda: tamanho', type: 'select', options: [['', 'Não informado'], ['P', 'P'], ['M', 'M'], ['G', 'G'], ['GG', 'GG']], hint: 'Normalmente quem preenche é a própria pessoa, no celular. Use aqui para corrigir ou para lançar por quem não tem acesso.' },
+        { name: 'farda_gola', label: 'Farda: gola', type: 'select', options: [['', 'Não informado'], ['polo', 'Gola polo'], ['t-shirt', 'T-shirt']] },
+        { name: 'farda_corte', label: 'Farda: modelo', type: 'select', options: [['', 'Não informado'], ['masculino', 'Masculino'], ['feminino', 'Feminino']] },
+        { name: 'farda_baby_look', label: 'Farda: baby look', type: 'boolean', emptyAs: false },
+        { name: 'farda_nome', label: 'Farda: nome nas costas', type: 'text', maxlength: 24, hint: 'Um nome e, no máximo, uma inicial. Ex.: Maria S.' },
+      ],
+    },
     eventos: {
       titulo: 'festa',
       padrao: { ativo: 'true' },
@@ -144,6 +169,12 @@ function montarForms(ctx) {
         { name: 'pix_qr_url', label: 'QR Code do PIX', type: 'image' },
         { name: 'whatsapp', label: 'WhatsApp da organização', type: 'text', maxlength: 20, hint: 'Só números, com DDI e DDD. Ex.: 5568999999999' },
         { name: 'ativo', label: 'Aparece na lista de festas', type: 'boolean' },
+        { name: 'farda_votacao_ate', label: 'Equipe · último dia de votação da farda', type: 'date', hint: 'Passado este dia a votação fecha e vale o modelo mais votado.' },
+        { name: 'farda_modelo_id', label: 'Equipe · modelo definido', type: 'select', numeric: true, options: () => [['', 'O mais votado (automático)'], ...(ctx.getModelos?.() || []).map((modelo) => [String(modelo.id), modelo.nome])], hint: 'Use só para desempatar ou impor um modelo. Vazio deixa a votação decidir.' },
+        { name: 'farda_pagamento_ate', label: 'Equipe · prazo para pagar a farda', type: 'date' },
+        { name: 'farda_medidas', label: 'Equipe · tabela de medidas da farda', type: 'textarea', rows: 5, hint: 'Uma linha por tamanho: TAMANHO | largura | altura, em centímetros. Ex.: P | 50 | 70. Sem isso a página avisa que a tabela ainda não foi publicada.' },
+        { name: 'contribuicao_ate', label: 'Equipe · prazo para pagar a contribuição', type: 'date' },
+        { name: 'contribuicao_texto', label: 'Equipe · texto da aba Contribuição', type: 'textarea', maxlength: 600, hint: 'Vazio = a página usa o texto padrão.' },
       ],
     },
     cronograma: {
@@ -153,7 +184,7 @@ function montarForms(ctx) {
         { name: 'evento', label: 'Evento', type: 'text', required: true, maxlength: 120 },
         { name: 'horario_previsto', label: 'Horário previsto', type: 'time', required: true },
         { name: 'status', label: 'Situação', type: 'select', options: [['pendente', 'Pendente'], ['realizado', 'Realizado']] },
-        { name: 'sorteio_id', label: 'Sorteio ligado a este evento', type: 'select', options: () => [['', 'Nenhum'], ...ctx.getSorteios().map((draw) => [String(draw.id), `${draw.identificacao} — ${draw.premio}`])], hint: 'Se preenchido, o card ganha um atalho para acompanhar o sorteio.' },
+        { name: 'sorteio_id', label: 'Sorteio ligado a este evento', type: 'select', numeric: true, options: () => [['', 'Nenhum'], ...ctx.getSorteios().map((draw) => [String(draw.id), `${draw.identificacao} — ${draw.premio}`])], hint: 'Se preenchido, o card ganha um atalho para acompanhar o sorteio.' },
       ],
     },
   };
@@ -251,7 +282,10 @@ export function createEditor(ctx) {
     </div>`;
     }
     if (field.type === 'boolean') {
-      const marcado = value === 'false' ? 'false' : 'true';
+      // Coluna que aceita nulo precisa dizer para que lado ela cai vazia:
+      // `farda_baby_look` sem resposta é "Não", e não "Sim".
+      const vazio = field.emptyAs === false ? 'false' : 'true';
+      const marcado = value === '' ? vazio : (value === 'false' ? 'false' : 'true');
       return `<label for="${id}">${escapeHtml(field.label)}<select id="${id}" name="${field.name}"><option value="true"${marcado === 'true' ? ' selected' : ''}>Sim</option><option value="false"${marcado === 'false' ? ' selected' : ''}>Não</option></select>${hint}</label>`;
     }
     if (field.type === 'select') {
@@ -286,14 +320,14 @@ export function createEditor(ctx) {
       const element = $d(`#f-${field.name}`);
       if (!element) return;
       const raw = String(element.value ?? '').trim();
-      if (raw === '') { values[field.name] = field.type === 'boolean' ? true : (field.emptyAs !== undefined ? field.emptyAs : null); return; }
+      if (raw === '') { values[field.name] = field.emptyAs !== undefined ? field.emptyAs : (field.type === 'boolean' ? true : null); return; }
       // Campos de link guardam sempre um endereço https completo, monte-o o
       // organizador de nome de usuário, de número ou de link colado.
       if (field.transform) { values[field.name] = field.transform(raw); return; }
       if (field.type === 'boolean') { values[field.name] = raw === 'true'; return; }
       if (field.type === 'number') { const parsed = Number(raw); values[field.name] = Number.isFinite(parsed) ? parsed : null; return; }
-      // sorteio_id é um select de texto, mas a coluna é numérica.
-      values[field.name] = field.name === 'sorteio_id' ? Number(raw) : raw;
+      // Um <select> devolve texto; `numeric` marca os que gravam em coluna numérica.
+      values[field.name] = field.numeric ? Number(raw) : raw;
     });
     return values;
   }

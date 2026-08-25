@@ -67,6 +67,39 @@
 
         <section class="admin-card">
           <div class="admin-card-title">
+            <div><p class="section-label">Uso interno da escola</p><h2>Página da equipe</h2></div>
+            <div class="card-tools"><a class="small-button preview-button" id="preview-equipe" href="#" target="_blank" rel="noopener" hidden>Abrir a página</a></div>
+          </div>
+          <p class="muted card-help">Endereço só da equipe, fora do site do visitante: votação do modelo da farda, dados de cada camisa e a lista de contribuição. Os prazos, a tabela de medidas e o texto da contribuição ficam em <b>Editar dados desta festa</b>.</p>
+          <p id="equipe-link" class="event-link"></p>
+          <form id="codigo-form" class="codigo-form">
+            <label for="equipe-codigo-admin">Código de acesso da equipe<input id="equipe-codigo-admin" maxlength="60" autocomplete="off" placeholder="Deixe vazio para não pedir código" /></label>
+            <button class="small-button" type="submit">Salvar código</button>
+          </form>
+          <p id="codigo-feedback" class="feedback" role="status"></p>
+        </section>
+
+        <section class="admin-card">
+          <div class="admin-card-title">
+            <div><p class="section-label">Equipe · votação</p><h2>Modelos de farda</h2></div>
+            <div class="card-tools"><span id="modelo-count" class="count-chip"></span><button class="small-button new-button" type="button" data-new="farda_modelos">+ Novo modelo</button></div>
+          </div>
+          <p class="muted card-help">Cadastre um modelo por foto. A equipe vota neles até o prazo, e o mais votado vira o modelo da festa.</p>
+          <div id="admin-modelos" class="admin-list"></div>
+        </section>
+
+        <section class="admin-card">
+          <div class="admin-card-title">
+            <div><p class="section-label">Equipe · fardas e contribuição</p><h2>Funcionários</h2></div>
+            <div class="card-tools"><span id="funcionario-count" class="count-chip"></span><button class="small-button new-button" type="button" data-new="funcionarios">+ Novo funcionário</button></div>
+          </div>
+          <p class="muted card-help">A lista se preenche sozinha conforme a equipe entra na página. Os botões de pagamento mudam na hora para quem estiver com a página aberta — <b>só você</b> pode alterá-los.</p>
+          <div id="admin-funcionarios" class="admin-list"></div>
+          <p id="funcionario-feedback" class="feedback" role="status"></p>
+        </section>
+
+        <section class="admin-card">
+          <div class="admin-card-title">
             <div><p class="section-label">Programação</p><h2>Cronograma</h2></div>
             <div class="card-tools"><span id="schedule-count" class="count-chip"></span><button class="small-button new-button" type="button" data-new="cronograma">+ Novo evento</button></div>
           </div>

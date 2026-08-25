@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0c0c0d" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="description" content="Planejamento interno da equipe da escola: fardas e contribuição." />
+    <title>Equipe da escola | Festa Cultural</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://esm.sh" />
+    <!--
+      Esta página é servida em /<festa>/funcionarios, dois níveis de caminho.
+      Endereço relativo ("./style.css") apontaria para /<festa>/style.css e daria
+      404 — todo caminho aqui é absoluto de propósito.
+    -->
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body class="equipe-body">
+    <main class="equipe-shell">
+      <header class="equipe-header">
+        <a class="brand equipe-brand" id="brand-link" href="/">
+          <picture id="brand-picture">
+            <source srcset="/assets/logo.webp" type="image/webp" />
+            <img class="brand-logo" src="/assets/logo.png" alt="Festa Cultural" width="720" height="285" />
+          </picture>
+        </a>
+        <div class="equipe-header-tag">
+          <p class="kicker">Uso interno</p>
+          <h1>Equipe da escola</h1>
+          <p id="equipe-escola" class="equipe-escola"></p>
+        </div>
+      </header>
+
+      <p id="equipe-status" class="network-status equipe-status" role="status" aria-live="polite">Carregando...</p>
+      <p id="equipe-erro" class="permission-warning" role="alert" hidden></p>
+
+      <!-- Primeiro acesso: a pessoa se identifica pelo nome completo. -->
+      <section id="equipe-gate" class="equipe-gate admin-card" hidden>
+        <p class="section-label">Primeiro acesso</p>
+        <h2>Identifique-se</h2>
+        <p class="muted card-help">Esta página é do planejamento interno da escola. Diga o seu <b>nome completo</b> para o seu voto e a sua farda ficarem no seu nome. Fica guardado neste aparelho — você só faz isso uma vez.</p>
+        <form id="equipe-form">
+          <label for="equipe-nome">Nome completo
+            <input id="equipe-nome" name="nome" type="text" autocomplete="name" maxlength="90" placeholder="Ex.: Maria Aparecida Souza" required />
+          </label>
+          <label for="equipe-cargo">Setor na escola
+            <select id="equipe-cargo" name="cargo" required>
+              <option value="">Escolha o seu setor</option>
+              <option value="gestao">Gestão</option>
+              <option value="professores">Professores</option>
+              <option value="aee">AEE</option>
+              <option value="administrativo">Administrativo</option>
+              <option value="transporte">Transporte</option>
+              <option value="apoio">Apoio</option>
+            </select>
+          </label>
+          <label id="equipe-codigo-campo" for="equipe-codigo" hidden>Código de acesso da equipe
+            <input id="equipe-codigo" name="codigo" type="text" maxlength="60" autocomplete="off" />
+            <small class="field-hint">A organização passa este código para a equipe.</small>
+          </label>
+          <button class="primary-button" type="submit">Entrar <span aria-hidden="true">→</span></button>
+          <p id="equipe-feedback" class="feedback" role="alert"></p>
+        </form>
+      </section>
+
+      <!-- Depois de identificado. -->
+      <div id="equipe-app" hidden>
+        <div class="equipe-eu">
+          <span class="user-chip" id="equipe-eu-nome"></span>
+          <button class="text-button" type="button" id="equipe-trocar">Corrigir meu cadastro</button>
+        </div>
+
+        <section id="equipe-destaque" class="equipe-destaque" aria-live="polite" hidden></section>
+
+        <nav class="equipe-tabs" role="tablist" aria-label="Assuntos da equipe">
+          <button class="equipe-tab is-active" type="button" role="tab" id="aba-fardas" aria-selected="true" aria-controls="painel-fardas" data-equipe-tab="fardas">Fardas</button>
+          <button class="equipe-tab" type="button" role="tab" id="aba-contribuicao" aria-selected="false" aria-controls="painel-contribuicao" data-equipe-tab="contribuicao">Contribuição</button>
+        </nav>
+
+        <section class="equipe-painel" role="tabpanel" id="painel-fardas" aria-labelledby="aba-fardas">
+          <div id="fardas-votacao"></div>
+          <div id="fardas-minha"></div>
+          <div id="fardas-lista"></div>
+        </section>
+
+        <section class="equipe-painel" role="tabpanel" id="painel-contribuicao" aria-labelledby="aba-contribuicao" hidden>
+          <div id="contribuicao-topo"></div>
+          <div id="contribuicao-lista"></div>
+        </section>
+      </div>
+
+      <a class="equipe-voltar" id="equipe-voltar" href="/">Ver a página da festa <span aria-hidden="true">→</span></a>
+    </main>
+
+    <script type="module" src="/js/funcionarios.js"></script>
+  </body>
+</html>

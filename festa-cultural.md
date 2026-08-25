@@ -56,6 +56,25 @@ Para garantir o funcionamento em tempo real, as seguintes tabelas precisam ser c
 - `whatsapp` / `instagram` / `facebook` / `tiktok`: text (endereço https completo; o painel converte `@usuario` ou número de telefone em link)
 - `rifa_titulo`, `rifa_descricao`, `rifa_url`: text (rifa online da candidata, exibida na aba Rifa online do perfil)
 
+### Tabelas da equipe da escola (uso interno)
+Servem à página `/<festa>/funcionarios`, que não é linkada no site do visitante.
+
+- `funcionarios`: `id`, `evento_id`, `nome` (único por festa), `cargo` (`gestao`, `professores`, `aee`, `administrativo`, `transporte`, `apoio`), `contribuicao_valor`, `contribuicao_paga`, `farda_nome`, `farda_gola`, `farda_corte`, `farda_tamanho`, `farda_baby_look`, `farda_paga`.
+- `farda_modelos`: `id`, `evento_id`, `nome`, `descricao`, `imagem_url` — os modelos que a equipe vota.
+- `farda_votos`: um voto por funcionário (`unique (funcionario_id)`); votar de novo troca o voto.
+- `equipe_acesso`: `evento_id`, `codigo` — a senha da equipe. Fica **fora** de `eventos` de propósito: aquela tabela é lida com `select *` pelo site público e a senha sairia junto na resposta.
+- `private.funcionario_acesso`: `funcionario_id`, `token`. O token é o que identifica a pessoa no celular dela. Mora em `private` porque, em `public`, qualquer um leria a lista de tokens e agiria pelos colegas.
+- Em `eventos`: `farda_votacao_ate`, `farda_pagamento_ate`, `farda_medidas`, `farda_modelo_id`, `contribuicao_ate`, `contribuicao_texto`.
+
+**Como o funcionário escreve.** Ele não tem conta e não tem `grant` de escrita em tabela nenhuma. Tudo passa por função `security definer`, que confere o token antes de gravar:
+
+- `funcionario_entrar(slug, nome, cargo, codigo, token)` — cria o cadastro no primeiro acesso ou devolve o token de quem já está na lista; com token em mãos, corrige nome e setor.
+- `funcionario_votar(token, modelo_id)` — recusa depois do prazo de votação.
+- `funcionario_salvar_farda(token, nome, gola, corte, tamanho, baby_look)` — não toca em `farda_paga`.
+- `equipe_exige_codigo(slug)` — devolve só um sim/não, para a página decidir se mostra o campo de senha sem revelar a senha.
+
+`contribuicao_paga` e `farda_paga` só mudam pelo painel da organização.
+
 ---
 
 ## 📱 3. Estrutura do Front-end (Visão do Visitante)
@@ -118,6 +137,18 @@ O site será uma Single Page Application (SPA) simples ou um conjunto de página
 - Linha do tempo ou lista de cards com as atrações ordenadas por horário.
 - **Contagem Regressiva:** Cada card possui um script JavaScript que calcula a diferença entre o horário atual do celular do visitante e o `horario_previsto`, exibindo um cronômetro regressivo: *"Faltam XX minutos"*.
 - **Interatividade:** Se o evento for concluído, o admin altera o status para `realizado` e o card exibe a tag *"Realizado"*. Se o evento for associado a um `sorteio_id`, o card ganha um link direto para a aba de sorteios.
+
+#### 🧑‍🏫 3.8. Página da equipe: `/<festa>/funcionarios`
+Endereço separado, com `noindex`, **não linkado** no site do visitante — só o painel da organização mostra o endereço. Serve ao planejamento interno da escola.
+
+- **Identificação:** no primeiro acesso a pessoa informa nome completo e setor. Fica guardado no celular dela. Se a festa tiver senha de equipe cadastrada, a página também pede a senha.
+- **Tela inicial:** depois que o modelo da farda é decidido, a foto dele fica no topo com o botão *"Preencha seus dados"*.
+- **Aba Fardas**
+  - *Votar no modelo:* grade com as fotos cadastradas pela organização. Cada card traz o contador de votos e a lista de quem votou ali. Um voto por pessoa; votar de novo troca o voto. Passado `farda_votacao_ate`, a votação fecha e vence o mais votado (empate fica com o cadastrado primeiro; a organização pode impor um modelo em `farda_modelo_id`).
+  - *Informações da sua farda:* nome nas costas (um nome e, no máximo, uma inicial), gola polo ou t-shirt, modelo masculino ou feminino, tamanho P/M/G/GG com a tabela de medidas em centímetros, e baby look sim/não.
+  - *Quem já preencheu:* lista com o nome de cadastro, o resumo das escolhas e o selo **A pagar** (vermelho) ou **Pago** (verde), além do prazo de pagamento.
+- **Aba Contribuição:** texto de abertura, prazo, botão que copia a chave PIX exibindo *"Chave PIX copiada. Confira — Banco: X · Beneficiário: Y."*, e a lista dos funcionários com o setor ao lado do nome, o valor e o mesmo par de selos.
+- **Quem dá baixa nos pagamentos é a organização**, no painel. O funcionário enxerga o status, mas não o altera.
 
 ---
 

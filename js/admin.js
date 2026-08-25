@@ -9,7 +9,7 @@ const statusLabel = { disponivel: 'Disponível', poucas_unidades: 'Poucas unidad
 const EVENTO_KEY = 'festa-cultural:admin-evento';
 // `organizador` guarda o resultado de public.sou_organizador(): true, false, ou
 // null quando a função ainda não existe no banco (migration não aplicada).
-const state = { eventos: [], eventoId: null, produtos: [], sorteios: [], cronograma: [], candidatas: [], organizador: null };
+const state = { eventos: [], eventoId: null, produtos: [], sorteios: [], cronograma: [], candidatas: [], farda_modelos: [], funcionarios: [], organizador: null };
 
 function feedback(selector, message, isError = false) { const element = $(selector); if (!element) return; element.textContent = message; element.classList.toggle('error', isError); }
 function refreshIcons() { window.lucide?.createIcons(); }
@@ -18,6 +18,7 @@ const editor = createEditor({
   getEventoId: () => state.eventoId,
   getRecord: (table, id) => (state[table] || []).find((entry) => String(entry.id) === String(id)),
   getSorteios: () => state.sorteios,
+  getModelos: () => state.farda_modelos,
   getOrganizador: () => state.organizador,
   onSaved: async (table, id, gravado) => {
     if (table === 'eventos') {
@@ -91,6 +92,37 @@ function renderCandidates() {
     : '<p class="muted">Nenhuma candidata cadastrada.</p>';
 }
 
+const CARGOS = { gestao: 'Gestão', professores: 'Professores', aee: 'AEE', administrativo: 'Administrativo', transporte: 'Transporte', apoio: 'Apoio' };
+const GOLAS = { polo: 'Gola polo', 't-shirt': 'T-shirt' };
+const CORTES = { masculino: 'Masculino', feminino: 'Feminino' };
+
+function renderModelos() {
+  $('#modelo-count').textContent = `${state.farda_modelos.length} ${state.farda_modelos.length === 1 ? 'modelo' : 'modelos'}`;
+  const escolhido = eventoAtual()?.farda_modelo_id;
+  $('#admin-modelos').innerHTML = state.farda_modelos.length
+    ? state.farda_modelos.map((modelo) => `<article class="admin-row">${thumb(modelo.imagem_url)}<div class="row-main"><h3>${escapeHtml(modelo.nome)}${String(modelo.id) === String(escolhido) ? ' <span class="count-chip">definido</span>' : ''}</h3><p>${escapeHtml(modelo.descricao || 'Sem descrição')}</p></div><div class="row-actions">${editButton('farda_modelos', modelo.id)}</div></article>`).join('')
+    : '<p class="muted">Nenhum modelo cadastrado. Toque em "+ Novo modelo" e envie a foto de cada um.</p>';
+}
+
+// Resumo do que a pessoa escolheu, para conferir o pedido com a confecção.
+function resumoFarda(pessoa) {
+  const partes = [GOLAS[pessoa.farda_gola], CORTES[pessoa.farda_corte], pessoa.farda_tamanho ? `Tamanho ${pessoa.farda_tamanho}` : null, pessoa.farda_baby_look ? 'Baby look' : null, pessoa.farda_nome ? `Costas: ${pessoa.farda_nome}` : null].filter(Boolean);
+  return partes.length ? partes.join(' · ') : 'Farda não informada';
+}
+
+function pagamentoControles(pessoa) {
+  const botao = (campo, rotulo, pago) => `<button class="selected ${pago ? 'is-pago' : 'is-devendo'}" type="button" data-func-pago="${pessoa.id}|${campo}|${pago ? 'false' : 'true'}">${rotulo}: ${pago ? 'pago' : 'a pagar'}</button>`;
+  return `<div class="status-controls pgto-controles">${botao('contribuicao_paga', 'Contribuição', pessoa.contribuicao_paga)}${pessoa.farda_tamanho ? botao('farda_paga', 'Farda', pessoa.farda_paga) : ''}</div>`;
+}
+
+function renderFuncionarios() {
+  const total = state.funcionarios.length;
+  $('#funcionario-count').textContent = `${total} ${total === 1 ? 'pessoa' : 'pessoas'}`;
+  $('#admin-funcionarios').innerHTML = total
+    ? state.funcionarios.map((pessoa) => `<article class="admin-row"><div class="row-main"><h3>${escapeHtml(pessoa.nome)}</h3><p><span class="cargo-chip">${escapeHtml(CARGOS[pessoa.cargo] || pessoa.cargo)}</span>${pessoa.contribuicao_valor != null ? formatMoney(pessoa.contribuicao_valor) : 'Contribuição a definir'}</p><p>${escapeHtml(resumoFarda(pessoa))}</p></div><div class="row-actions">${pagamentoControles(pessoa)}${editButton('funcionarios', pessoa.id)}</div></article>`).join('')
+    : '<p class="muted">Ninguém entrou na página da equipe ainda. Os nomes aparecem aqui sozinhos conforme cada um se identifica.</p>';
+}
+
 function renderSchedule() {
   $('#schedule-count').textContent = `${state.cronograma.length} ${state.cronograma.length === 1 ? 'evento' : 'eventos'}`;
   $('#admin-schedule').innerHTML = state.cronograma.length
@@ -115,7 +147,7 @@ function renderDrawConsole() {
   consoleElement.innerHTML = `<div class="console-status"><span class="status status-${draw.status}">${statusLabel[draw.status]}</span><strong>${escapeHtml(draw.premio)}</strong><small>Último: ${draw.ultimo_numero ?? '—'} · Histórico: ${history.length}</small></div><div class="console-buttons"><button data-draw-status="em_andamento" type="button">Iniciar</button><button data-draw-status="aguardando" type="button">Pausar</button><button data-draw-status="realizado" type="button">Encerrar</button></div><form id="number-form" class="number-form"><label>Número chamado / lance<input id="called-number" inputmode="numeric" min="0" step="1" type="number" required /></label><button class="primary-button" type="submit">Confirmar</button></form><button id="reset-draw" class="danger-button" type="button">Limpar sorteio atual</button><p id="draw-feedback" class="feedback" role="status"></p>`;
 }
 
-function renderAll() { renderProducts(); renderSelect(); renderDrawList(); renderCandidates(); renderSchedule(); refreshIcons(); }
+function renderAll() { renderProducts(); renderSelect(); renderDrawList(); renderCandidates(); renderModelos(); renderFuncionarios(); renderSchedule(); refreshIcons(); }
 
 /* ------------------------------------------------------------------ *
  * Festas
@@ -157,21 +189,62 @@ function renderEventos() {
   const url = `${location.origin}/${atual.slug}`;
   $('#preview-event').href = `/${atual.slug}`;
   link.innerHTML = `Endereço do visitante: <a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(url)}</a>`;
+  renderEquipeLink(atual);
+}
+
+function renderEquipeLink(atual) {
+  const link = $('#equipe-link');
+  const botao = $('#preview-equipe');
+  if (!link) return;
+  if (!atual) { link.textContent = ''; if (botao) botao.hidden = true; return; }
+  const url = `${location.origin}/${atual.slug}/funcionarios`;
+  if (botao) { botao.hidden = false; botao.href = `/${atual.slug}/funcionarios`; }
+  link.innerHTML = `Endereço da equipe: <a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(url)}</a>`;
+}
+
+// A senha da equipe mora em `equipe_acesso`, fora de `eventos` — se fosse
+// coluna da festa, o site público a devolveria junto no `select *`.
+async function loadCodigoDaEquipe() {
+  const campo = $('#equipe-codigo-admin');
+  if (!campo || !state.eventoId) return;
+  const { data, error } = await supabase.from('equipe_acesso').select('codigo').eq('evento_id', state.eventoId).maybeSingle();
+  if (error) { feedback('#codigo-feedback', describeError(error), true); return; }
+  campo.value = data?.codigo || '';
+}
+
+async function salvarCodigoDaEquipe(event) {
+  event.preventDefault();
+  if (!state.eventoId) { feedback('#codigo-feedback', 'Escolha uma festa antes.', true); return; }
+  const codigo = $('#equipe-codigo-admin').value.trim();
+  feedback('#codigo-feedback', 'Salvando...');
+  const { data, error } = await supabase
+    .from('equipe_acesso')
+    .upsert({ evento_id: state.eventoId, codigo: codigo || null, atualizado_em: new Date().toISOString() }, { onConflict: 'evento_id' })
+    .select('evento_id');
+  // Escrita barrada pelo RLS casa zero linhas e volta sem erro: o painel não
+  // pode dizer "salvo" com o banco intacto.
+  if (error) { feedback('#codigo-feedback', describeError(error), true); return; }
+  if (!data?.length) { feedback('#codigo-feedback', SEM_PERMISSAO, true); return; }
+  feedback('#codigo-feedback', codigo ? 'Código salvo. A equipe vai precisar dele para entrar.' : 'Código removido: qualquer pessoa com o endereço entra.');
 }
 
 async function loadData() {
-  if (!state.eventoId) { state.produtos = []; state.sorteios = []; state.cronograma = []; state.candidatas = []; renderAll(); return; }
+  if (!state.eventoId) { state.produtos = []; state.sorteios = []; state.cronograma = []; state.candidatas = []; state.farda_modelos = []; state.funcionarios = []; renderAll(); return; }
   const evento = state.eventoId;
-  const [produtos, sorteios, cronograma, candidatas] = await Promise.all([
+  const [produtos, sorteios, cronograma, candidatas, modelos, funcionarios] = await Promise.all([
     supabase.from('produtos').select('*').eq('evento_id', evento).order('nome'),
     supabase.from('sorteios').select('*').eq('evento_id', evento).order('id', { ascending: false }),
     supabase.from('cronograma').select('*').eq('evento_id', evento).order('horario_previsto'),
     supabase.from('candidatas').select('*').eq('evento_id', evento).order('nome'),
+    supabase.from('farda_modelos').select('*').eq('evento_id', evento).order('id'),
+    supabase.from('funcionarios').select('*').eq('evento_id', evento).order('nome'),
   ]);
-  const error = [produtos, sorteios, cronograma, candidatas].find((result) => result.error)?.error;
+  const error = [produtos, sorteios, cronograma, candidatas, modelos, funcionarios].find((result) => result.error)?.error;
   if (error) { mostrarProblema(`Não foi possível carregar os dados desta festa. ${describeError(error)}`); return; }
   limparProblema();
   state.produtos = produtos.data || []; state.sorteios = sorteios.data || []; state.cronograma = cronograma.data || []; state.candidatas = candidatas.data || [];
+  state.farda_modelos = modelos.data || []; state.funcionarios = funcionarios.data || [];
+  await loadCodigoDaEquipe();
   renderAll();
 }
 
@@ -187,6 +260,8 @@ async function subscribe() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'sorteios' }, loadData)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'cronograma' }, loadData)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'candidatas' }, loadData)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'farda_modelos' }, loadData)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'funcionarios' }, loadData)
     .subscribe();
 }
 
@@ -197,6 +272,7 @@ $('#sign-out').addEventListener('click', async () => { await supabase.auth.signO
 $('#active-draw').addEventListener('change', renderDrawConsole);
 $('#active-event').addEventListener('change', (event) => selecionarEvento(event.target.value));
 $('#edit-event').addEventListener('click', () => { if (state.eventoId) editor.open('eventos', state.eventoId); });
+$('#codigo-form').addEventListener('submit', salvarCodigoDaEquipe);
 
 document.addEventListener('click', async (event) => {
   const create = event.target.closest('[data-new]');
@@ -206,6 +282,15 @@ document.addEventListener('click', async (event) => {
   const product = event.target.closest('[data-product-status]');
   const drawStatus = event.target.closest('[data-draw-status]');
   const schedule = event.target.closest('[data-schedule-toggle]');
+  const pagamento = event.target.closest('[data-func-pago]');
+  // Erro de pagamento tem de aparecer no card dos funcionários, não no do
+  // sorteio — onde ninguém estaria olhando.
+  if (pagamento) {
+    const [id, campo, valor] = pagamento.dataset.funcPago.split('|');
+    try { await updateTable('funcionarios', { [campo]: valor === 'true' }, id); feedback('#funcionario-feedback', ''); }
+    catch (error) { feedback('#funcionario-feedback', error.message, true); }
+    return;
+  }
   try {
     if (product) { const [id, status] = product.dataset.productStatus.split('|'); await updateTable('produtos', { status }, id); }
     if (drawStatus) { await updateTable('sorteios', { status: drawStatus.dataset.drawStatus }, $('#active-draw').value); feedback('#draw-feedback', 'Estado atualizado.'); }

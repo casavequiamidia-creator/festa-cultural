@@ -2,6 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
   "rewrites": [
+    { "source": "/:slug/funcionarios", "destination": "/funcionarios" },
+    { "source": "/:slug/funcionarios/", "destination": "/funcionarios" },
     { "source": "/:slug", "destination": "/" },
     { "source": "/:slug/", "destination": "/" }
   ],
