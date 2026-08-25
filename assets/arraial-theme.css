@@ -1412,3 +1412,124 @@ body.modo-organizador .site-shell { margin-top: 58px; }
   .equipe-tab { font-size: .93rem; min-height: 46px; }
   .escolha { flex: 1 1 calc(50% - 4px); }
 }
+
+/* ==========================================================================
+   Farda: escolha do tecido, grade de tamanhos e a conta do que pagar.
+   ========================================================================== */
+.campo-nome-costas { display: block; }
+.escolha { display: inline-flex; flex-direction: column; gap: 2px; justify-content: center; line-height: 1.2; }
+.escolha-extra { color: var(--gold); font-size: .74rem; font-weight: 700; }
+.escolha.is-ativa .escolha-extra { color: #fff2e2; }
+
+/* --- Grade de tecidos ---------------------------------------------------- */
+.tecido-grade { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.tecido-card { background: #141416; border: 1px solid #313035; border-radius: 15px; display: flex; flex-direction: column; overflow: hidden; transition: border-color .16s ease; }
+.tecido-card.is-escolhido { border-color: var(--orange); box-shadow: 0 0 0 1px rgba(236, 117, 45, .35); }
+.tecido-escolher {
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  display: grid;
+  gap: 3px;
+  padding: 0 0 12px;
+  text-align: left;
+  width: 100%;
+}
+.tecido-foto { display: block; height: 130px; object-fit: cover; width: 100%; }
+.tecido-nome { font-size: 1rem; font-weight: 800; padding: 10px 13px 0; }
+.tecido-preco { color: var(--gold); font-size: 1.08rem; font-weight: 800; padding: 0 13px; }
+.tecido-resumo { color: var(--muted); font-size: .78rem; line-height: 1.4; padding: 2px 13px 0; }
+.tecido-card.is-escolhido .tecido-nome::after { color: var(--orange-bright); content: ' ✓'; }
+.tecido-detalhe {
+  background: #1c1b1e;
+  border: 0;
+  border-top: 1px solid #2c2b30;
+  color: #ffc395;
+  font-size: .8rem;
+  font-weight: 800;
+  min-height: 42px;
+  width: 100%;
+}
+.tecido-detalhe:hover { background: #8d3f24; color: #fff7f0; }
+
+/* --- Modal do tecido ----------------------------------------------------- */
+.tecido-dialog {
+  background: transparent;
+  border: 0;
+  margin: auto;
+  max-height: 92vh;
+  max-width: 620px;
+  padding: 0;
+  width: min(620px, calc(100vw - 24px));
+}
+.tecido-dialog::backdrop { backdrop-filter: blur(4px); background: rgba(0, 0, 0, .78); }
+.tecido-modal-card {
+  background: linear-gradient(160deg, #1b1b1b, #101010);
+  border: 1px solid #3d3630;
+  border-radius: 24px;
+  max-height: 92vh;
+  overflow-y: auto;
+}
+.tecido-modal-foto { border-radius: 23px 23px 0 0; display: block; height: 300px; object-fit: cover; width: 100%; }
+.tecido-modal-corpo { padding: 22px; }
+.tecido-modal-corpo h2 { font-size: clamp(1.7rem, 6vw, 2.2rem); margin: 6px 0 8px; }
+.tecido-modal-preco { color: var(--muted); font-size: .95rem; margin: 0 0 16px; }
+.tecido-modal-preco strong { color: var(--gold); font-size: 1.35rem; }
+.tecido-modal-texto { color: #d5d1ce; font-size: .98rem; line-height: 1.65; margin: 0 0 18px; }
+.tecido-lista { display: grid; gap: 10px; list-style: none; margin: 0 0 20px; padding: 0; }
+.tecido-lista li { color: #cbc8c6; font-size: .93rem; line-height: 1.45; padding-left: 26px; position: relative; }
+.tecido-lista li::before {
+  border: 1px solid var(--orange);
+  border-radius: 50%;
+  color: var(--orange-bright);
+  content: '✓';
+  font-size: .68rem;
+  height: 19px;
+  left: 0;
+  line-height: 17px;
+  position: absolute;
+  text-align: center;
+  top: 1px;
+  width: 19px;
+}
+.tecido-modal-corpo .primary-button { min-height: 56px; width: 100%; }
+
+/* --- Grade de medidas ---------------------------------------------------- */
+.medidas-tabela tr.is-escolhida th, .medidas-tabela tr.is-escolhida td { background: rgba(236, 117, 45, .12); color: #ffd8b4; }
+.medidas-nota { color: var(--muted-deep); font-size: .76rem; line-height: 1.5; margin: 12px 0 0; }
+
+/* --- A conta ------------------------------------------------------------- */
+.valor-caixa { background: #131315; border: 1px solid var(--line-warm); border-radius: 15px; margin-bottom: 20px; padding: 16px 17px; }
+.valor-linhas { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.valor-linhas li { color: #cbc8c6; display: flex; font-size: .9rem; gap: 12px; justify-content: space-between; }
+.valor-linhas strong { color: var(--text); flex: 0 0 auto; }
+.valor-total { align-items: baseline; border-top: 1px solid #35302a; display: flex; gap: 12px; justify-content: space-between; margin-top: 12px; padding-top: 12px; }
+.valor-total span { color: var(--muted); font-size: .78rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.valor-total strong { color: var(--gold); font-family: 'Barlow Condensed', sans-serif; font-size: 2.1rem; line-height: 1; }
+.valor-nota { color: var(--muted-deep); font-size: .8rem; line-height: 1.5; margin: 10px 0 0; }
+
+.farda-pago {
+  background: linear-gradient(150deg, #14231a, #101312);
+  border: 1px solid var(--green);
+  border-radius: 18px;
+  margin-bottom: 16px;
+  padding: 20px;
+}
+.farda-pago[hidden] { display: none; }
+.farda-pago h3 { font-size: clamp(1.4rem, 5vw, 1.9rem); margin: 6px 0 16px; }
+.farda-pago h3 strong { color: #7dfab5; }
+.farda-pago .primary-button { min-height: 56px; width: 100%; }
+.farda-pago .valor-nota { margin-top: 12px; }
+
+@media (max-width: 620px) {
+  .tecido-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tecido-foto { height: 110px; }
+  .tecido-nome { font-size: .92rem; padding: 9px 11px 0; }
+  .tecido-preco { font-size: 1rem; padding: 0 11px; }
+  .tecido-resumo { padding: 2px 11px 0; }
+  .tecido-dialog { max-height: 96vh; width: calc(100vw - 14px); }
+  .tecido-modal-card { max-height: 96vh; }
+  .tecido-modal-foto { height: 220px; }
+  .tecido-modal-corpo { padding: 18px; }
+  .medidas-tabela th, .medidas-tabela td { font-size: .8rem; padding: 8px 3px; }
+}

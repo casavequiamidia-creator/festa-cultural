@@ -9,7 +9,7 @@ const statusLabel = { disponivel: 'Disponível', poucas_unidades: 'Poucas unidad
 const EVENTO_KEY = 'festa-cultural:admin-evento';
 // `organizador` guarda o resultado de public.sou_organizador(): true, false, ou
 // null quando a função ainda não existe no banco (migration não aplicada).
-const state = { eventos: [], eventoId: null, produtos: [], sorteios: [], cronograma: [], candidatas: [], farda_modelos: [], funcionarios: [], organizador: null };
+const state = { eventos: [], eventoId: null, produtos: [], sorteios: [], cronograma: [], candidatas: [], farda_modelos: [], farda_tecidos: [], funcionarios: [], organizador: null };
 
 function feedback(selector, message, isError = false) { const element = $(selector); if (!element) return; element.textContent = message; element.classList.toggle('error', isError); }
 function refreshIcons() { window.lucide?.createIcons(); }
@@ -19,6 +19,7 @@ const editor = createEditor({
   getRecord: (table, id) => (state[table] || []).find((entry) => String(entry.id) === String(id)),
   getSorteios: () => state.sorteios,
   getModelos: () => state.farda_modelos,
+  getTecidos: () => state.farda_tecidos,
   getOrganizador: () => state.organizador,
   onSaved: async (table, id, gravado) => {
     if (table === 'eventos') {
@@ -104,9 +105,30 @@ function renderModelos() {
     : '<p class="muted">Nenhum modelo cadastrado. Toque em "+ Novo modelo" e envie a foto de cada um.</p>';
 }
 
+function renderTecidos() {
+  $('#tecido-count').textContent = `${state.farda_tecidos.length} ${state.farda_tecidos.length === 1 ? 'tecido' : 'tecidos'}`;
+  $('#admin-tecidos').innerHTML = state.farda_tecidos.length
+    ? state.farda_tecidos.map((tecido) => `<article class="admin-row">${thumb(tecido.imagem_url)}<div class="row-main"><h3>${escapeHtml(tecido.nome)}</h3><p>${formatMoney(tecido.preco)}${tecido.resumo ? ` · ${escapeHtml(tecido.resumo)}` : ''}</p>${tecido.imagem_url ? '' : '<p class="row-perfil">Sem foto: a equipe vê um espaço vazio no card.</p>'}</div><div class="row-actions">${editButton('farda_tecidos', tecido.id)}</div></article>`).join('')
+    : '<p class="muted">Nenhum tecido cadastrado.</p>';
+}
+
+// Mesma conta da página da equipe: tecido + gola polo + tamanho maior.
+const TAMANHOS_COM_ADICIONAL = new Set(['GG', 'XG', 'XGG', 'GGBL', 'XGBL', 'XGGBL']);
+function totalDaFarda(pessoa) {
+  const evento = eventoAtual() || {};
+  const tecido = state.farda_tecidos.find((item) => String(item.id) === String(pessoa.farda_tecido_id));
+  if (!tecido) return 0;
+  return Number(tecido.preco || 0)
+    + (pessoa.farda_gola === 'polo' ? Number(evento.farda_adicional_polo || 0) : 0)
+    + (TAMANHOS_COM_ADICIONAL.has(pessoa.farda_tamanho) ? Number(evento.farda_adicional_tamanho || 0) : 0);
+}
+
 // Resumo do que a pessoa escolheu, para conferir o pedido com a confecção.
 function resumoFarda(pessoa) {
-  const partes = [GOLAS[pessoa.farda_gola], CORTES[pessoa.farda_corte], pessoa.farda_tamanho ? `Tamanho ${pessoa.farda_tamanho}` : null, pessoa.farda_baby_look ? 'Baby look' : null, pessoa.farda_nome ? `Costas: ${pessoa.farda_nome}` : null].filter(Boolean);
+  const tecido = state.farda_tecidos.find((item) => String(item.id) === String(pessoa.farda_tecido_id));
+  const total = totalDaFarda(pessoa);
+  const partes = [tecido ? tecido.nome : null, GOLAS[pessoa.farda_gola], CORTES[pessoa.farda_corte], pessoa.farda_tamanho ? `Tamanho ${pessoa.farda_tamanho}` : null, pessoa.farda_baby_look ? 'Baby look' : null, pessoa.farda_nome ? `Costas: ${pessoa.farda_nome}` : null].filter(Boolean);
+  if (total > 0) partes.push(`Total ${formatMoney(total)}`);
   return partes.length ? partes.join(' · ') : 'Farda não informada';
 }
 
@@ -147,7 +169,7 @@ function renderDrawConsole() {
   consoleElement.innerHTML = `<div class="console-status"><span class="status status-${draw.status}">${statusLabel[draw.status]}</span><strong>${escapeHtml(draw.premio)}</strong><small>Último: ${draw.ultimo_numero ?? '—'} · Histórico: ${history.length}</small></div><div class="console-buttons"><button data-draw-status="em_andamento" type="button">Iniciar</button><button data-draw-status="aguardando" type="button">Pausar</button><button data-draw-status="realizado" type="button">Encerrar</button></div><form id="number-form" class="number-form"><label>Número chamado / lance<input id="called-number" inputmode="numeric" min="0" step="1" type="number" required /></label><button class="primary-button" type="submit">Confirmar</button></form><button id="reset-draw" class="danger-button" type="button">Limpar sorteio atual</button><p id="draw-feedback" class="feedback" role="status"></p>`;
 }
 
-function renderAll() { renderProducts(); renderSelect(); renderDrawList(); renderCandidates(); renderModelos(); renderFuncionarios(); renderSchedule(); refreshIcons(); }
+function renderAll() { renderProducts(); renderSelect(); renderDrawList(); renderCandidates(); renderModelos(); renderTecidos(); renderFuncionarios(); renderSchedule(); refreshIcons(); }
 
 /* ------------------------------------------------------------------ *
  * Festas
@@ -229,21 +251,22 @@ async function salvarCodigoDaEquipe(event) {
 }
 
 async function loadData() {
-  if (!state.eventoId) { state.produtos = []; state.sorteios = []; state.cronograma = []; state.candidatas = []; state.farda_modelos = []; state.funcionarios = []; renderAll(); return; }
+  if (!state.eventoId) { state.produtos = []; state.sorteios = []; state.cronograma = []; state.candidatas = []; state.farda_modelos = []; state.farda_tecidos = []; state.funcionarios = []; renderAll(); return; }
   const evento = state.eventoId;
-  const [produtos, sorteios, cronograma, candidatas, modelos, funcionarios] = await Promise.all([
+  const [produtos, sorteios, cronograma, candidatas, modelos, tecidos, funcionarios] = await Promise.all([
     supabase.from('produtos').select('*').eq('evento_id', evento).order('nome'),
     supabase.from('sorteios').select('*').eq('evento_id', evento).order('id', { ascending: false }),
     supabase.from('cronograma').select('*').eq('evento_id', evento).order('horario_previsto'),
     supabase.from('candidatas').select('*').eq('evento_id', evento).order('nome'),
     supabase.from('farda_modelos').select('*').eq('evento_id', evento).order('id'),
+    supabase.from('farda_tecidos').select('*').eq('evento_id', evento).order('ordem').order('id'),
     supabase.from('funcionarios').select('*').eq('evento_id', evento).order('nome'),
   ]);
-  const error = [produtos, sorteios, cronograma, candidatas, modelos, funcionarios].find((result) => result.error)?.error;
+  const error = [produtos, sorteios, cronograma, candidatas, modelos, tecidos, funcionarios].find((result) => result.error)?.error;
   if (error) { mostrarProblema(`Não foi possível carregar os dados desta festa. ${describeError(error)}`); return; }
   limparProblema();
   state.produtos = produtos.data || []; state.sorteios = sorteios.data || []; state.cronograma = cronograma.data || []; state.candidatas = candidatas.data || [];
-  state.farda_modelos = modelos.data || []; state.funcionarios = funcionarios.data || [];
+  state.farda_modelos = modelos.data || []; state.farda_tecidos = tecidos.data || []; state.funcionarios = funcionarios.data || [];
   await loadCodigoDaEquipe();
   renderAll();
 }
@@ -261,6 +284,7 @@ async function subscribe() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'cronograma' }, loadData)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'candidatas' }, loadData)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'farda_modelos' }, loadData)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'farda_tecidos' }, loadData)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'funcionarios' }, loadData)
     .subscribe();
 }

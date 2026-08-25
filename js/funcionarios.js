@@ -14,6 +14,7 @@ import { supabase } from './supabase-config.js';
 const state = {
   evento: null,
   modelos: [],
+  tecidos: [],
   funcionarios: [],
   votos: [],
   eu: null,
@@ -45,9 +46,41 @@ const CARGOS = [
 const cargoLabel = (valor) => (CARGOS.find(([chave]) => chave === valor) || [, 'Apoio'])[1];
 const cargoOrdem = (valor) => { const posicao = CARGOS.findIndex(([chave]) => chave === valor); return posicao < 0 ? CARGOS.length : posicao; };
 
-const TAMANHOS = ['P', 'M', 'G', 'GG'];
 const GOLAS = [['polo', 'Gola polo'], ['t-shirt', 'T-shirt']];
-const CORTES = [['masculino', 'Masculino'], ['feminino', 'Feminino']];
+const CORTES = [['feminino', 'Feminino'], ['masculino', 'Masculino']];
+
+// Grade da confecção, igual em toda escola — por isso mora aqui, e não num
+// campo por festa. O sufixo BL da grade feminina é o que diz à confecção que
+// o molde é baby look; por isso os dois conjuntos não se misturam.
+const GRADES = {
+  feminino: {
+    rotulo: 'Grade feminina',
+    linhas: [['PPBL', 43, 52], ['PBL', 45, 57], ['MBL', 48, 62], ['GBL', 52, 69], ['GGBL', 54, 75], ['XGBL', 60, 80], ['XGGBL', 64, 85]],
+  },
+  masculino: {
+    rotulo: 'Grade masculina',
+    linhas: [['PP', 45, 64], ['P', 47, 66], ['M', 52, 71], ['G', 55, 74], ['GG', 59, 76], ['XG', 61, 80], ['XGG', 65, 83]],
+  },
+};
+const NOTA_GRADE = 'Os tamanhos podem variar até 1 cm. As medidas são de peças sublimadas — malha sem sublimar pode variar até 2 cm.';
+// Os três maiores de cada grade custam mais tecido, e por isso pagam adicional.
+const TAMANHOS_COM_ADICIONAL = new Set(['GG', 'XG', 'XGG', 'GGBL', 'XGBL', 'XGGBL']);
+const naGrade = (corte, tamanho) => Boolean(GRADES[corte]?.linhas.some(([valor]) => valor === tamanho));
+
+const adicionalPolo = () => Number(state.evento?.farda_adicional_polo ?? 0);
+const adicionalTamanho = () => Number(state.evento?.farda_adicional_tamanho ?? 0);
+
+// Serve tanto para o rascunho em edição quanto para uma farda já gravada: os
+// dois carregam os mesmos campos. O valor é sempre recalculado, nunca guardado
+// — se o preço do tecido mudar, a conta acompanha.
+function valorDaFarda(escolha) {
+  const tecido = tecidoPor(escolha?.farda_tecido_id);
+  const itens = [];
+  if (tecido) itens.push({ rotulo: tecido.nome, valor: Number(tecido.preco || 0) });
+  if (escolha?.farda_gola === 'polo' && adicionalPolo() > 0) itens.push({ rotulo: 'Adicional gola polo', valor: adicionalPolo() });
+  if (TAMANHOS_COM_ADICIONAL.has(escolha?.farda_tamanho) && adicionalTamanho() > 0) itens.push({ rotulo: `Adicional tamanho ${escolha.farda_tamanho}`, valor: adicionalTamanho() });
+  return { itens, total: itens.reduce((soma, item) => soma + item.valor, 0) };
+}
 // Espelha a constraint do banco: um nome e, no máximo, uma inicial.
 const NOME_COSTAS = /^[\p{L}'.-]{2,20}( \p{L}\.?)?$/u;
 
@@ -198,33 +231,71 @@ function renderVotacao() {
   </section>`;
 }
 
-// "P | 50 | 70" por linha. Sem tabela publicada a página diz isso, em vez de
-// exibir medida inventada — é por ela que a pessoa escolhe o tamanho.
-function medidas() {
-  return String(state.evento?.farda_medidas || '')
-    .split('\n')
-    .map((linha) => linha.split('|').map((parte) => parte.trim()))
-    .filter((partes) => partes.length >= 3 && partes[0])
-    .map(([tamanho, largura, altura]) => ({ tamanho, largura, altura }));
+// Os tamanhos só aparecem depois do gênero: cada grade tem os seus, e a
+// tabela ao lado é o que faz a pessoa acertar o tamanho sem provar a camisa.
+function blocoDeTamanhos() {
+  const grade = GRADES[rascunho.farda_corte];
+  if (!grade) return '<p class="medidas-vazia">Escolha primeiro o modelo — feminino ou masculino — para ver os tamanhos e as medidas.</p>';
+  return `${escolhas('farda_tamanho', grade.linhas.map(([tamanho]) => tamanhoComAdicional(tamanho)), rascunho.farda_tamanho)}
+      <div class="medidas-caixa">
+        <span class="cartela-label">${escapeHtml(grade.rotulo)}</span>
+        <table class="medidas-tabela">
+          <thead><tr><th>Tamanho</th><th>Largura</th><th>Altura</th><th>Adicional</th></tr></thead>
+          <tbody>${grade.linhas.map(([tamanho, largura, altura]) => `<tr${rascunho.farda_tamanho === tamanho ? ' class="is-escolhida"' : ''}><th scope="row">${tamanho}</th><td>${largura} cm</td><td>${altura} cm</td><td>${TAMANHOS_COM_ADICIONAL.has(tamanho) && adicionalTamanho() > 0 ? `+ ${formatMoney(adicionalTamanho())}` : '—'}</td></tr>`).join('')}</tbody>
+        </table>
+        <p class="medidas-nota">${NOTA_GRADE}</p>
+      </div>`;
 }
 
-function tabelaDeMedidas() {
-  const linhas = medidas();
-  if (!linhas.length) return '<p class="medidas-vazia">A organização ainda não publicou a tabela de medidas. Confirme o tamanho com a coordenação antes de escolher.</p>';
-  return `<div class="medidas-caixa">
-    <span class="cartela-label">Medidas da camisa</span>
-    <table class="medidas-tabela">
-      <thead><tr><th>Tamanho</th><th>Largura</th><th>Altura</th></tr></thead>
-      <tbody>${linhas.map((linha) => `<tr><th scope="row">${escapeHtml(linha.tamanho)}</th><td>${escapeHtml(linha.largura)} cm</td><td>${escapeHtml(linha.altura)} cm</td></tr>`).join('')}</tbody>
-    </table>
-  </div>`;
+/* --- Tecidos ------------------------------------------------------- */
+const tecidoPor = (id) => state.tecidos.find((tecido) => Number(tecido.id) === Number(id)) || null;
+
+function blocoDeTecidos() {
+  if (!state.tecidos.length) return '<p class="medidas-vazia">A organização ainda não cadastrou os tecidos.</p>';
+  return `<div class="tecido-grade">${state.tecidos.map((tecido) => {
+    const escolhido = Number(rascunho.farda_tecido_id) === Number(tecido.id);
+    return `<article class="tecido-card${escolhido ? ' is-escolhido' : ''}">
+      <button class="tecido-escolher" type="button" data-tecido="${tecido.id}" aria-pressed="${escolhido}">
+        ${renderImagem(tecido.imagem_url, `tecido ${tecido.nome}`, 'tecido-foto')}
+        <span class="tecido-nome">${escapeHtml(tecido.nome)}</span>
+        <span class="tecido-preco">${formatMoney(tecido.preco)}</span>
+        ${tecido.resumo ? `<span class="tecido-resumo">${escapeHtml(tecido.resumo)}</span>` : ''}
+      </button>
+      <button class="tecido-detalhe" type="button" data-tecido-detalhe="${tecido.id}">Ver detalhes</button>
+    </article>`;
+  }).join('')}</div>`;
+}
+
+function abrirTecido(id) {
+  const tecido = tecidoPor(id);
+  const dialogo = $('#tecido-modal');
+  if (!tecido || !dialogo) return;
+  const itens = String(tecido.caracteristicas || '').split('\n').map((linha) => linha.trim()).filter(Boolean);
+  dialogo.innerHTML = `<button class="profile-close" type="button" data-fechar-tecido aria-label="Fechar detalhes do tecido">×</button>
+    <article class="tecido-modal-card">
+      ${renderImagem(tecido.imagem_url, `tecido ${tecido.nome}`, 'tecido-modal-foto')}
+      <div class="tecido-modal-corpo">
+        <p class="section-label">${escapeHtml(tecido.resumo || 'Tecido')}</p>
+        <h2 id="tecido-nome">${escapeHtml(tecido.nome)}</h2>
+        <p class="tecido-modal-preco">A partir de <strong>${formatMoney(tecido.preco)}</strong></p>
+        ${tecido.descricao ? `<p class="tecido-modal-texto">${escapeHtml(tecido.descricao)}</p>` : ''}
+        ${itens.length ? `<ul class="tecido-lista">${itens.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : ''}
+        <button class="primary-button" type="button" data-tecido="${tecido.id}">Escolher este tecido</button>
+      </div>
+    </article>`;
+  if (!dialogo.open) dialogo.showModal();
 }
 
 const meuCadastro = () => (state.eu ? state.funcionarios.find((pessoa) => Number(pessoa.id) === Number(state.eu.id)) || null : null);
 
 function escolhas(nome, opcoes, atual) {
-  return `<div class="escolha-linha" role="group" aria-label="${escapeHtml(nome)}">${opcoes.map(([valor, rotulo]) => `<button class="escolha${String(atual) === String(valor) ? ' is-ativa' : ''}" type="button" data-campo="${nome}" data-valor="${escapeHtml(valor)}" aria-pressed="${String(atual) === String(valor)}">${escapeHtml(rotulo)}</button>`).join('')}</div>`;
+  return `<div class="escolha-linha" role="group" aria-label="${escapeHtml(nome)}">${opcoes.map(([valor, rotulo, extra]) => `<button class="escolha${String(atual) === String(valor) ? ' is-ativa' : ''}" type="button" data-campo="${nome}" data-valor="${escapeHtml(valor)}" aria-pressed="${String(atual) === String(valor)}">${escapeHtml(rotulo)}${extra ? `<small class="escolha-extra">${escapeHtml(extra)}</small>` : ''}</button>`).join('')}</div>`;
 }
+
+// O adicional aparece na própria opção: ninguém deveria descobrir os R$ 10,00
+// da gola polo só depois de salvar.
+const golasComAdicional = () => GOLAS.map(([valor, rotulo]) => [valor, rotulo, valor === 'polo' && adicionalPolo() > 0 ? `+ ${formatMoney(adicionalPolo())}` : '']);
+const tamanhoComAdicional = (tamanho) => [tamanho, tamanho, TAMANHOS_COM_ADICIONAL.has(tamanho) && adicionalTamanho() > 0 ? `+ ${formatMoney(adicionalTamanho())}` : ''];
 
 // Rascunho do formulário: o que a pessoa clicou antes de salvar. Começa no que
 // já está gravado, para "revisar" não apagar o que ela escolheu semana passada.
@@ -237,6 +308,7 @@ function iniciarRascunho() {
     farda_corte: eu?.farda_corte || '',
     farda_tamanho: eu?.farda_tamanho || '',
     farda_baby_look: eu?.farda_baby_look === true,
+    farda_tecido_id: eu?.farda_tecido_id || '',
   };
 }
 
@@ -250,31 +322,57 @@ function renderMinhaFarda() {
   alvo.innerHTML = `<section class="equipe-bloco">
     ${blocoTitulo('farda', 'Informações da sua farda', subtitulo)}
     <div class="equipe-bloco-corpo" id="farda-form"${state.aberto.farda ? '' : ' hidden'}>
-      <label class="campo" for="farda-nome">Nome nas costas
+      <label class="campo campo-nome-costas" for="farda-nome">Nome nas costas
         <input id="farda-nome" type="text" maxlength="24" value="${escapeHtml(rascunho.farda_nome)}" placeholder="Ex.: Maria S." />
         <small class="field-hint">Só um nome e, se quiser, uma inicial. Deixe vazio para a camisa sair sem nome.</small>
       </label>
-      <div class="campo"><span class="field-label">Gola</span>${escolhas('farda_gola', GOLAS, rascunho.farda_gola)}</div>
-      <div class="campo"><span class="field-label">Modelo</span>${escolhas('farda_corte', CORTES, rascunho.farda_corte)}</div>
+      <div class="campo">
+        <span class="field-label">Tecido</span>
+        <small class="field-hint">Toque em <b>Ver detalhes</b> para a foto ampliada e as características de cada malha.</small>
+        ${blocoDeTecidos()}
+      </div>
+      <div class="campo"><span class="field-label">Gola</span>${escolhas('farda_gola', golasComAdicional(), rascunho.farda_gola)}</div>
+      <div class="campo">
+        <span class="field-label">Modelo</span>
+        <small class="field-hint">A grade de tamanhos muda conforme a escolha.</small>
+        ${escolhas('farda_corte', CORTES, rascunho.farda_corte)}
+      </div>
       <div class="campo">
         <span class="field-label">Tamanho</span>
-        ${escolhas('farda_tamanho', TAMANHOS.map((tamanho) => [tamanho, tamanho]), rascunho.farda_tamanho)}
-        ${tabelaDeMedidas()}
+        ${blocoDeTamanhos()}
       </div>
       <div class="campo"><span class="field-label">Baby look</span>${escolhas('farda_baby_look', [['sim', 'Sim'], ['nao', 'Não']], rascunho.farda_baby_look ? 'sim' : 'nao')}</div>
+      ${blocoDoValor()}
       <button class="primary-button" type="button" id="salvar-farda">Salvar minha farda</button>
       <p id="farda-feedback" class="feedback" role="status" aria-live="polite"></p>
     </div>
   </section>`;
 }
 
+// Quanto sai a farda com tudo somado, e o que compõe o valor.
+function blocoDoValor() {
+  const { itens, total } = valorDaFarda(rascunho);
+  if (!itens.length) return '<p class="medidas-vazia">Escolha o tecido, a gola e o tamanho para ver quanto fica a sua farda.</p>';
+  const completo = rascunho.farda_tecido_id && rascunho.farda_gola && rascunho.farda_corte && rascunho.farda_tamanho;
+  return `<div class="valor-caixa">
+        <span class="cartela-label">Valor da sua farda</span>
+        <ul class="valor-linhas">${itens.map((item) => `<li><span>${escapeHtml(item.rotulo)}</span><strong>${formatMoney(item.valor)}</strong></li>`).join('')}</ul>
+        <div class="valor-total"><span>Total</span><strong>${formatMoney(total)}</strong></div>
+        ${completo ? '' : '<p class="valor-nota">Faltam escolhas: o total ainda pode mudar.</p>'}
+      </div>`;
+}
+
 function resumoFarda(pessoa) {
   const partes = [];
+  const tecido = tecidoPor(pessoa.farda_tecido_id);
+  if (tecido) partes.push(tecido.nome);
   if (pessoa.farda_gola) partes.push((GOLAS.find(([valor]) => valor === pessoa.farda_gola) || [, pessoa.farda_gola])[1]);
   if (pessoa.farda_corte) partes.push((CORTES.find(([valor]) => valor === pessoa.farda_corte) || [, pessoa.farda_corte])[1]);
   if (pessoa.farda_tamanho) partes.push(`Tamanho ${pessoa.farda_tamanho}`);
   if (pessoa.farda_baby_look) partes.push('Baby look');
   if (pessoa.farda_nome) partes.push(`Costas: ${pessoa.farda_nome}`);
+  const { total } = valorDaFarda(pessoa);
+  if (total > 0) partes.push(`Total ${formatMoney(total)}`);
   return partes.join(' · ') || 'Sem dados';
 }
 
@@ -313,7 +411,7 @@ function renderContribuicaoTopo() {
       <p class="equipe-texto">${escapeHtml(evento.contribuicao_texto || TEXTO_CONTRIBUICAO_PADRAO)}</p>
       ${prazo ? `<p class="equipe-aviso">Prazo para pagar: <b>${escapeHtml(formatDate(prazo))}</b>.${prazoEncerrado(prazo) ? ' <b>Prazo vencido.</b>' : ''}</p>` : ''}
       ${temPix
-        ? `<button class="primary-button" type="button" id="copiar-pix">Copiar a chave PIX <span aria-hidden="true">⧉</span></button>`
+        ? `<button class="primary-button" type="button" data-copiar-pix="#pix-feedback">Copiar a chave PIX <span aria-hidden="true">⧉</span></button>`
         : '<p class="medidas-vazia">A organização ainda não cadastrou a chave PIX desta festa.</p>'}
       <p id="pix-feedback" class="feedback" role="status" aria-live="polite"></p>
     </div>
@@ -369,13 +467,14 @@ function trocarAba(aba) {
  * ------------------------------------------------------------------ */
 async function carregarTudo() {
   const evento = state.evento.id;
-  const [modelos, funcionarios, votos, atualizado] = await Promise.all([
+  const [modelos, tecidos, funcionarios, votos, atualizado] = await Promise.all([
     supabase.from('farda_modelos').select('*').eq('evento_id', evento).order('id'),
+    supabase.from('farda_tecidos').select('*').eq('evento_id', evento).order('ordem').order('id'),
     supabase.from('funcionarios').select('*').eq('evento_id', evento).order('nome'),
     supabase.from('farda_votos').select('*').eq('evento_id', evento),
     supabase.from('eventos').select('*').eq('id', evento).maybeSingle(),
   ]);
-  const erro = [modelos, funcionarios, votos, atualizado].find((resposta) => resposta.error)?.error;
+  const erro = [modelos, tecidos, funcionarios, votos, atualizado].find((resposta) => resposta.error)?.error;
   if (erro) {
     setStatus('Não foi possível atualizar agora. Tentando de novo...', 'offline');
     mostrarErro(`${mensagemDeErro(erro)} — se a mensagem falar em tabela ou coluna ausente, rode as migrations de supabase/migrations no SQL Editor.`);
@@ -383,6 +482,7 @@ async function carregarTudo() {
   }
   mostrarErro('');
   state.modelos = modelos.data || [];
+  state.tecidos = tecidos.data || [];
   state.funcionarios = funcionarios.data || [];
   state.votos = votos.data || [];
   if (atualizado.data) state.evento = atualizado.data;
@@ -407,7 +507,7 @@ async function assinarRealtime() {
   if (state.canal) { await supabase.removeChannel(state.canal); state.canal = null; }
   const filtro = `evento_id=eq.${state.evento.id}`;
   const canal = supabase.channel(`equipe-${state.evento.slug}`);
-  ['farda_modelos', 'funcionarios', 'farda_votos'].forEach((tabela) => {
+  ['farda_modelos', 'farda_tecidos', 'funcionarios', 'farda_votos'].forEach((tabela) => {
     canal.on('postgres_changes', { event: '*', schema: 'public', table: tabela, filter: filtro }, carregarTudo);
   });
   canal.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'eventos', filter: `id=eq.${state.evento.id}` }, carregarTudo);
@@ -490,8 +590,12 @@ async function salvarFarda(botao) {
     avisar('No nome das costas cabe um nome e, no máximo, uma inicial. Ex.: Maria S.', true);
     return;
   }
+  if (state.tecidos.length && !rascunho.farda_tecido_id) {
+    avisar('Escolha o tecido da sua farda antes de salvar.', true);
+    return;
+  }
   if (!rascunho.farda_gola || !rascunho.farda_corte || !rascunho.farda_tamanho) {
-    avisar('Escolha a gola, o modelo e o tamanho antes de salvar.', true);
+    avisar('Escolha o tecido, a gola, o modelo e o tamanho antes de salvar.', true);
     return;
   }
   botao.disabled = true;
@@ -503,15 +607,33 @@ async function salvarFarda(botao) {
     p_corte: rascunho.farda_corte,
     p_tamanho: rascunho.farda_tamanho,
     p_baby_look: rascunho.farda_baby_look,
+    p_tecido_id: rascunho.farda_tecido_id ? Number(rascunho.farda_tecido_id) : null,
   });
   botao.disabled = false;
   if (error) { avisar(mensagemDeErro(error), true); return; }
   await carregarTudo();
-  avisarEm('#farda-feedback', 'Pronto! Os seus dados entraram na lista.');
+  const { total } = valorDaFarda(meuCadastro() || rascunho);
+  mostrarValorAPagar(total);
 }
 
-async function copiarPix() {
-  const nota = $('#pix-feedback');
+// O fecho do fluxo: a pessoa acabou de escolher e precisa saber quanto mandar.
+function mostrarValorAPagar(total) {
+  const alvo = $('#farda-pago');
+  if (!alvo) { avisarEm('#farda-feedback', 'Pronto! Os seus dados entraram na lista.'); return; }
+  const evento = state.evento || {};
+  alvo.hidden = false;
+  alvo.innerHTML = `<p class="section-label">Farda salva</p>
+    <h3>Envie <strong>${formatMoney(total)}</strong> no PIX</h3>
+    ${evento.pix_chave
+      ? `<button class="primary-button" type="button" data-copiar-pix="#farda-pix-feedback">Copiar a chave PIX <span aria-hidden="true">⧉</span></button>
+         <p id="farda-pix-feedback" class="feedback" role="status" aria-live="polite"></p>`
+      : '<p class="valor-nota">A organização ainda não cadastrou a chave PIX desta festa.</p>'}
+    ${state.evento?.farda_pagamento_ate ? `<p class="valor-nota">Prazo para pagar: ${escapeHtml(formatDate(state.evento.farda_pagamento_ate))}.</p>` : ''}
+    <p class="valor-nota">A organização confirma o recebimento e o seu selo vira <b>Pago</b> na lista abaixo.</p>`;
+}
+
+async function copiarPix(seletorDaNota = '#pix-feedback') {
+  const nota = $(seletorDaNota);
   const evento = state.evento || {};
   const confira = `Confira — Banco: ${evento.pix_banco || 'não informado'} · Beneficiário: ${evento.pix_favorecido || 'não informado'}.`;
   try {
@@ -548,10 +670,28 @@ document.addEventListener('click', (event) => {
     return;
   }
 
+  const verTecido = event.target.closest('[data-tecido-detalhe]');
+  if (verTecido) { abrirTecido(verTecido.dataset.tecidoDetalhe); return; }
+
+  const escolherTecido = event.target.closest('[data-tecido]');
+  if (escolherTecido) {
+    rascunho.farda_tecido_id = escolherTecido.dataset.tecido;
+    // O botão de escolher também existe dentro do modal.
+    const modal = $('#tecido-modal');
+    if (modal?.open) modal.close();
+    renderMinhaFarda();
+    return;
+  }
+
+  if (event.target.closest('[data-fechar-tecido]')) { $('#tecido-modal')?.close(); return; }
+
   const escolha = event.target.closest('.escolha');
   if (escolha) {
     const { campo, valor } = escolha.dataset;
     rascunho[campo] = campo === 'farda_baby_look' ? valor === 'sim' : valor;
+    // Trocar de grade invalida o tamanho anterior: "feminino tamanho M"
+    // mandaria o molde errado para a confecção.
+    if (campo === 'farda_corte' && !naGrade(valor, rascunho.farda_tamanho)) rascunho.farda_tamanho = '';
     // Só o formulário muda: redesenhar tudo tiraria o foco de quem está digitando.
     renderMinhaFarda();
     $(`.escolha[data-campo="${campo}"][data-valor="${valor}"]`)?.focus();
@@ -559,7 +699,8 @@ document.addEventListener('click', (event) => {
   }
 
   if (event.target.closest('#salvar-farda')) { salvarFarda(event.target.closest('#salvar-farda')); return; }
-  if (event.target.closest('#copiar-pix')) { copiarPix(); }
+  const pix = event.target.closest('[data-copiar-pix]');
+  if (pix) { copiarPix(pix.dataset.copiarPix); }
 });
 
 // O nome das costas é digitado; guarda a cada tecla para não se perder quando
@@ -567,6 +708,10 @@ document.addEventListener('click', (event) => {
 document.addEventListener('input', (event) => {
   if (event.target.id === 'farda-nome' && rascunho) rascunho.farda_nome = event.target.value;
 });
+
+// Clique no fundo escuro fecha o modal do tecido: o <dialog> recebe o evento
+// quando o alvo é ele mesmo, e não o conteúdo.
+$('#tecido-modal')?.addEventListener('click', (event) => { if (event.target.id === 'tecido-modal') event.target.close(); });
 
 document.addEventListener('visibilitychange', () => { if (!document.hidden && state.evento) carregarTudo(); });
 window.addEventListener('online', () => { if (state.evento) carregarTudo(); });

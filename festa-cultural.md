@@ -59,12 +59,17 @@ Para garantir o funcionamento em tempo real, as seguintes tabelas precisam ser c
 ### Tabelas da equipe da escola (uso interno)
 Servem à página `/<festa>/funcionarios`, que não é linkada no site do visitante.
 
-- `funcionarios`: `id`, `evento_id`, `nome` (único por festa), `cargo` (`gestao`, `professores`, `aee`, `administrativo`, `transporte`, `apoio`), `contribuicao_valor`, `contribuicao_paga`, `farda_nome`, `farda_gola`, `farda_corte`, `farda_tamanho`, `farda_baby_look`, `farda_paga`.
+- `funcionarios`: `id`, `evento_id`, `nome` (único por festa), `cargo` (`gestao`, `professores`, `aee`, `administrativo`, `transporte`, `apoio`), `contribuicao_valor`, `contribuicao_paga`, `farda_tecido_id`, `farda_nome`, `farda_gola`, `farda_corte`, `farda_tamanho`, `farda_baby_look`, `farda_paga`.
 - `farda_modelos`: `id`, `evento_id`, `nome`, `descricao`, `imagem_url` — os modelos que a equipe vota.
+- `farda_tecidos`: `id`, `evento_id`, `nome`, `preco`, `resumo`, `descricao`, `caracteristicas`, `imagem_url`, `ordem` — o catálogo de malhas. Vem semeado com os quatro tecidos, e um gatilho em `eventos` semeia toda festa nova.
 - `farda_votos`: um voto por funcionário (`unique (funcionario_id)`); votar de novo troca o voto.
 - `equipe_acesso`: `evento_id`, `codigo` — a senha da equipe. Fica **fora** de `eventos` de propósito: aquela tabela é lida com `select *` pelo site público e a senha sairia junto na resposta.
 - `private.funcionario_acesso`: `funcionario_id`, `token`. O token é o que identifica a pessoa no celular dela. Mora em `private` porque, em `public`, qualquer um leria a lista de tokens e agiria pelos colegas.
-- Em `eventos`: `farda_votacao_ate`, `farda_pagamento_ate`, `farda_medidas`, `farda_modelo_id`, `contribuicao_ate`, `contribuicao_texto`.
+- Em `eventos`: `farda_votacao_ate`, `farda_pagamento_ate`, `farda_modelo_id`, `farda_adicional_polo`, `farda_adicional_tamanho`, `contribuicao_ate`, `contribuicao_texto`.
+
+**Grade de tamanhos.** Duas grades distintas, e o banco não deixa misturar: a feminina vai de `PPBL` a `XGGBL` e a masculina de `PP` a `XGG`. O sufixo `BL` é o que diz à confecção que o molde é baby look, então `funcionarios_grade_coerente_check` exige que `farda_corte = 'feminino'` case exatamente com o tamanho terminado em `BL`. As medidas em centímetros são da confecção, iguais em toda escola, e por isso moram no front-end (`GRADES`, em `js/funcionarios.js`) em vez de num campo por festa.
+
+**Preço da farda.** Nunca é gravado — sai sempre da conta `preço do tecido + adicional da gola polo + adicional de tamanho`. Os dois adicionais são valores por festa; *quais* tamanhos pagam adicional (`GG`, `XG`, `XGG` e os `BL` equivalentes) é regra da grade e acompanha a grade no front-end.
 
 **Como o funcionário escreve.** Ele não tem conta e não tem `grant` de escrita em tabela nenhuma. Tudo passa por função `security definer`, que confere o token antes de gravar:
 
@@ -145,7 +150,14 @@ Endereço separado, com `noindex`, **não linkado** no site do visitante — só
 - **Tela inicial:** depois que o modelo da farda é decidido, a foto dele fica no topo com o botão *"Preencha seus dados"*.
 - **Aba Fardas**
   - *Votar no modelo:* grade com as fotos cadastradas pela organização. Cada card traz o contador de votos e a lista de quem votou ali. Um voto por pessoa; votar de novo troca o voto. Passado `farda_votacao_ate`, a votação fecha e vence o mais votado (empate fica com o cadastrado primeiro; a organização pode impor um modelo em `farda_modelo_id`).
-  - *Informações da sua farda:* nome nas costas (um nome e, no máximo, uma inicial), gola polo ou t-shirt, modelo masculino ou feminino, tamanho P/M/G/GG com a tabela de medidas em centímetros, e baby look sim/não.
+  - *Informações da sua farda:*
+    - **Tecido:** grade com os quatro do catálogo, cada um com foto, preço e um botão *Ver detalhes* que abre um modal flutuante com a foto ampliada, o texto completo e as características da malha.
+    - **Nome nas costas:** um nome e, no máximo, uma inicial.
+    - **Gola:** polo ou t-shirt. A opção polo mostra o adicional (`farda_adicional_polo`) na própria etiqueta.
+    - **Modelo:** feminino ou masculino — é essa escolha que define a grade exibida logo abaixo.
+    - **Tamanho:** os sete da grade escolhida, com a tabela de medidas em centímetros ao lado. `GG`, `XG` e `XGG` (e os `BL` equivalentes) mostram o adicional (`farda_adicional_tamanho`) na etiqueta e na coluna *Adicional* da tabela.
+    - **Baby look:** sim ou não.
+    - **A conta:** ao pé do formulário, o valor discriminado (tecido + adicionais) e o total, atualizado a cada escolha. Depois de salvar, um bloco verde diz **quanto enviar no PIX**, com o botão que copia a chave e o prazo de pagamento.
   - *Quem já preencheu:* lista com o nome de cadastro, o resumo das escolhas e o selo **A pagar** (vermelho) ou **Pago** (verde), além do prazo de pagamento.
 - **Aba Contribuição:** texto de abertura, prazo, botão que copia a chave PIX exibindo *"Chave PIX copiada. Confira — Banco: X · Beneficiário: Y."*, e a lista dos funcionários com o setor ao lado do nome, o valor e o mesmo par de selos.
 - **Quem dá baixa nos pagamentos é a organização**, no painel. O funcionário enxerga o status, mas não o altera.

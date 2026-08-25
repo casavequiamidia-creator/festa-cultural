@@ -55,7 +55,7 @@ export function normalizarRede(rede) {
 }
 
 // Tabelas cujo conteúdo pertence a uma festa específica.
-export const ESCOPADAS = new Set(['produtos', 'sorteios', 'cronograma', 'candidatas', 'avisos', 'funcionarios', 'farda_modelos']);
+export const ESCOPADAS = new Set(['produtos', 'sorteios', 'cronograma', 'candidatas', 'avisos', 'funcionarios', 'farda_modelos', 'farda_tecidos']);
 export const SEM_PERMISSAO = 'Nada foi gravado. Sua conta está fora da allowlist de organizadores — peça para incluírem seu usuário na tabela private.organizadores pelo SQL Editor.';
 const SEM_LINHA = 'Nada foi gravado: este registro não existe mais. Alguém pode tê-lo excluído. Atualize a página.';
 
@@ -65,7 +65,7 @@ export function describeError(error) {
   if (code === 'PGRST204' || code === '42703') return `${error.message} — o banco está sem as migrations mais recentes. Rode os arquivos de supabase/migrations no SQL Editor.`;
   if (code === '42P01' || code === 'PGRST205') return `${error.message} — tabela ausente. Rode as migrations no SQL Editor.`;
   if (code === '42501' || code === 'PGRST301') return SEM_PERMISSAO;
-  if (code === '23514') return `${error.message} — algum campo saiu do formato que o banco aceita. Confira os links (precisam começar com https://) e os campos numéricos.`;
+  if (code === '23514') return `${error.message} — algum campo saiu do formato que o banco aceita. Confira os links (precisam começar com https://), os campos numéricos e se o tamanho da farda pertence à grade escolhida (a feminina termina em BL).`;
   return error?.message || 'Erro desconhecido.';
 }
 
@@ -138,6 +138,19 @@ function montarForms(ctx) {
         { name: 'descricao', label: 'Descrição', type: 'textarea', maxlength: 240, hint: 'Tecido, cores, detalhes. Aparece embaixo do nome no card da votação.' },
       ],
     },
+    farda_tecidos: {
+      titulo: 'tecido',
+      padrao: { preco: 0, ordem: 10 },
+      campos: [
+        { name: 'nome', label: 'Nome do tecido', type: 'text', required: true, maxlength: 60, hint: 'Como a equipe vê no card. Ex.: KX Premium.' },
+        { name: 'preco', label: 'Preço (R$)', type: 'number', step: '0.01', min: '0', required: true, emptyAs: 0, hint: 'Valor da camisa nesta malha.' },
+        { name: 'imagem_url', label: 'Foto do tecido', type: 'image' },
+        { name: 'resumo', label: 'Linha de apoio', type: 'text', maxlength: 60, hint: 'Uma linha embaixo do nome. Ex.: Tecido esportivo premium.' },
+        { name: 'descricao', label: 'Descrição', type: 'textarea', rows: 5, maxlength: 600, hint: 'Texto completo, exibido quando a pessoa abre os detalhes.' },
+        { name: 'caracteristicas', label: 'Características', type: 'textarea', rows: 6, hint: 'Uma por linha. Ex.: Secagem rápida.' },
+        { name: 'ordem', label: 'Posição na lista', type: 'number', min: '1', step: '1', emptyAs: 10, hint: 'Menor aparece antes.' },
+      ],
+    },
     funcionarios: {
       titulo: 'funcionário',
       padrao: { cargo: 'apoio' },
@@ -147,9 +160,10 @@ function montarForms(ctx) {
         { name: 'contribuicao_valor', label: 'Contribuição (R$)', type: 'number', step: '0.01', min: '0', hint: 'Vazio aparece como "Valor a definir" na lista.' },
         { name: 'contribuicao_paga', label: 'Contribuição paga', type: 'boolean', emptyAs: false },
         { name: 'farda_paga', label: 'Farda paga', type: 'boolean', emptyAs: false },
-        { name: 'farda_tamanho', label: 'Farda: tamanho', type: 'select', options: [['', 'Não informado'], ['P', 'P'], ['M', 'M'], ['G', 'G'], ['GG', 'GG']], hint: 'Normalmente quem preenche é a própria pessoa, no celular. Use aqui para corrigir ou para lançar por quem não tem acesso.' },
+        { name: 'farda_tecido_id', label: 'Farda: tecido', type: 'select', numeric: true, options: () => [['', 'Não informado'], ...(ctx.getTecidos?.() || []).map((tecido) => [String(tecido.id), tecido.nome])] },
+        { name: 'farda_corte', label: 'Farda: modelo', type: 'select', options: [['', 'Não informado'], ['feminino', 'Feminino'], ['masculino', 'Masculino']], hint: 'Define a grade. O tamanho abaixo precisa ser da mesma grade.' },
+        { name: 'farda_tamanho', label: 'Farda: tamanho', type: 'select', options: [['', 'Não informado'], ['PPBL', 'PPBL (feminino)'], ['PBL', 'PBL (feminino)'], ['MBL', 'MBL (feminino)'], ['GBL', 'GBL (feminino)'], ['GGBL', 'GGBL (feminino)'], ['XGBL', 'XGBL (feminino)'], ['XGGBL', 'XGGBL (feminino)'], ['PP', 'PP (masculino)'], ['P', 'P (masculino)'], ['M', 'M (masculino)'], ['G', 'G (masculino)'], ['GG', 'GG (masculino)'], ['XG', 'XG (masculino)'], ['XGG', 'XGG (masculino)']], hint: 'Normalmente quem preenche é a própria pessoa, no celular. Use aqui para corrigir ou para lançar por quem não tem acesso.' },
         { name: 'farda_gola', label: 'Farda: gola', type: 'select', options: [['', 'Não informado'], ['polo', 'Gola polo'], ['t-shirt', 'T-shirt']] },
-        { name: 'farda_corte', label: 'Farda: modelo', type: 'select', options: [['', 'Não informado'], ['masculino', 'Masculino'], ['feminino', 'Feminino']] },
         { name: 'farda_baby_look', label: 'Farda: baby look', type: 'boolean', emptyAs: false },
         { name: 'farda_nome', label: 'Farda: nome nas costas', type: 'text', maxlength: 24, hint: 'Um nome e, no máximo, uma inicial. Ex.: Maria S.' },
       ],
@@ -172,7 +186,8 @@ function montarForms(ctx) {
         { name: 'farda_votacao_ate', label: 'Equipe · último dia de votação da farda', type: 'date', hint: 'Passado este dia a votação fecha e vale o modelo mais votado.' },
         { name: 'farda_modelo_id', label: 'Equipe · modelo definido', type: 'select', numeric: true, options: () => [['', 'O mais votado (automático)'], ...(ctx.getModelos?.() || []).map((modelo) => [String(modelo.id), modelo.nome])], hint: 'Use só para desempatar ou impor um modelo. Vazio deixa a votação decidir.' },
         { name: 'farda_pagamento_ate', label: 'Equipe · prazo para pagar a farda', type: 'date' },
-        { name: 'farda_medidas', label: 'Equipe · tabela de medidas da farda', type: 'textarea', rows: 5, hint: 'Uma linha por tamanho: TAMANHO | largura | altura, em centímetros. Ex.: P | 50 | 70. Sem isso a página avisa que a tabela ainda não foi publicada.' },
+        { name: 'farda_adicional_polo', label: 'Equipe · adicional da gola polo (R$)', type: 'number', step: '0.01', min: '0', emptyAs: 0, hint: 'Aparece na própria opção "Gola polo" e entra na conta. Zero some da tela.' },
+        { name: 'farda_adicional_tamanho', label: 'Equipe · adicional dos tamanhos maiores (R$)', type: 'number', step: '0.01', min: '0', emptyAs: 0, hint: 'Vale para GG, XG e XGG — e os equivalentes da grade feminina (GGBL, XGBL, XGGBL). Zero some da tela.' },
         { name: 'contribuicao_ate', label: 'Equipe · prazo para pagar a contribuição', type: 'date' },
         { name: 'contribuicao_texto', label: 'Equipe · texto da aba Contribuição', type: 'textarea', maxlength: 600, hint: 'Vazio = a página usa o texto padrão.' },
       ],

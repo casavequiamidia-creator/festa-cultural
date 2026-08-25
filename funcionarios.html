@@ -82,6 +82,8 @@
         <section class="equipe-painel" role="tabpanel" id="painel-fardas" aria-labelledby="aba-fardas">
           <div id="fardas-votacao"></div>
           <div id="fardas-minha"></div>
+          <!-- Preenchido só depois de salvar: o valor que a pessoa deve mandar no PIX. -->
+          <section id="farda-pago" class="farda-pago" aria-live="polite" hidden></section>
           <div id="fardas-lista"></div>
         </section>
 
@@ -93,6 +95,9 @@
 
       <a class="equipe-voltar" id="equipe-voltar" href="/">Ver a página da festa <span aria-hidden="true">→</span></a>
     </main>
+
+    <!-- Detalhe do tecido. O conteúdo é montado em js/funcionarios.js. -->
+    <dialog id="tecido-modal" class="tecido-dialog" aria-labelledby="tecido-nome"></dialog>
 
     <script type="module" src="/js/funcionarios.js"></script>
   </body>
