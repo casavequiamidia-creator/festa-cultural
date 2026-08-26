@@ -29,6 +29,23 @@
           </div>
         </section>
 
+        <section class="admin-card">
+          <div class="admin-card-title">
+            <div><p class="section-label">Contagem regressiva</p><h2>Data e hora da festa</h2></div>
+          </div>
+          <p class="muted card-help">Assim que você salvar, o relógio começa a correr na tela inicial do visitante e o botão <b>Adicionar na agenda</b> passa a criar o evento no celular dele. Deixe a data vazia para tirar a contagem do ar.</p>
+          <form id="data-festa-form" class="data-festa-form">
+            <label for="festa-data">Dia da festa<input id="festa-data" type="date" /></label>
+            <label for="festa-hora">Hora de início<input id="festa-hora" type="time" /></label>
+            <label for="festa-hora-fim">Hora de término<input id="festa-hora-fim" type="time" /></label>
+            <label for="festa-local">Local (vai na agenda)<input id="festa-local" maxlength="140" placeholder="Ex.: Pátio da escola — Rua X, 123" /></label>
+            <button class="primary-button" type="submit">Salvar data e hora</button>
+          </form>
+          <p class="muted card-help">A hora de término só serve para o convite da agenda; vazia, ele dura 4 horas. Festa que vira a noite pode terminar num horário menor que o de início.</p>
+          <p id="data-festa-previa" class="data-festa-previa" role="status"></p>
+          <p id="data-festa-feedback" class="feedback" role="status"></p>
+        </section>
+
         <section class="admin-card alert-control"><div><p class="section-label">Aviso global</p><h2>Comunicado para visitantes</h2></div><form id="alert-form"><label class="sr-only" for="alert-message">Mensagem do aviso</label><input id="alert-message" maxlength="240" placeholder="Ex.: Atenção: dono do veículo ABC-1234..." required /><button class="primary-button" type="submit">Disparar alerta</button></form><p id="alert-feedback" class="feedback" role="status"></p></section>
 
         <section class="admin-card">

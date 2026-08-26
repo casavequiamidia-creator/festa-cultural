@@ -209,6 +209,7 @@ function renderEventos() {
   const link = $('#event-link');
   $('#edit-event').hidden = !atual;
   $('#preview-event').hidden = !atual;
+  renderDataDaFesta(atual);
   if (!atual) { link.textContent = 'Crie a primeira festa em "+ Nova festa".'; return; }
   const url = `${location.origin}/${atual.slug}`;
   $('#preview-event').href = `/${atual.slug}`;
@@ -224,6 +225,74 @@ function renderEquipeLink(atual) {
   const url = `${location.origin}/${atual.slug}/funcionarios`;
   if (botao) { botao.hidden = false; botao.href = `/${atual.slug}/funcionarios`; }
   link.innerHTML = `Endereço da equipe: <a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(url)}</a>`;
+}
+
+/* ------------------------------------------------------------------ *
+ * Data e hora da festa: o que faz a contagem regressiva correr
+ *
+ * Os mesmos quatro campos existem em "Editar dados desta festa". Eles ganham
+ * um cartão próprio porque a data é a informação que a organização mexe cedo,
+ * uma vez, e quer conferir na hora — a prévia abaixo do formulário mostra o
+ * relógio andando exatamente como o visitante vai ver.
+ * ------------------------------------------------------------------ */
+// Qual festa o formulário está mostrando. A própria gravação volta pelo
+// Realtime e redesenha este cartão: sem esta marca, o "Salvo" sumiria da tela
+// um instante depois de aparecer.
+let dataFestaNaTela = null;
+
+function renderDataDaFesta(atual) {
+  const form = $('#data-festa-form');
+  if (!form) return;
+  form.hidden = !atual;
+  $('#festa-data').value = atual?.data_evento ? String(atual.data_evento).slice(0, 10) : '';
+  $('#festa-hora').value = shortTime(atual?.hora_evento);
+  $('#festa-hora-fim').value = shortTime(atual?.hora_fim);
+  $('#festa-local').value = atual?.local_evento || '';
+  if (String(atual?.id ?? '') !== String(dataFestaNaTela ?? '')) { dataFestaNaTela = atual?.id ?? null; feedback('#data-festa-feedback', ''); }
+  renderPrevia();
+}
+
+// Mesma conta do site do visitante (js/app.js): dia + hora lidos como hora de
+// parede, no relógio do próprio aparelho.
+function inicioDaFesta() {
+  const atual = eventoAtual();
+  const dia = String(atual?.data_evento || '').slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dia)) return null;
+  const [ano, mes, diaDoMes] = dia.split('-').map(Number);
+  const [hora, minuto] = String(atual.hora_evento || '00:00').slice(0, 5).split(':').map(Number);
+  return new Date(ano, mes - 1, diaDoMes, hora || 0, minuto || 0, 0, 0);
+}
+
+function renderPrevia() {
+  const previa = $('#data-festa-previa');
+  if (!previa) return;
+  const inicio = inicioDaFesta();
+  if (!inicio) { previa.textContent = 'Sem data: a tela inicial do visitante não mostra contagem nenhuma.'; previa.classList.remove('is-contando'); return; }
+  const restante = inicio - Date.now();
+  previa.classList.add('is-contando');
+  if (restante <= 0) { previa.textContent = 'A hora da festa já passou: o visitante vê "A festa começou!" e, depois dela, nada.'; return; }
+  const total = Math.floor(restante / 1000);
+  const partes = [[Math.floor(total / 86400), 'dia', 'dias'], [Math.floor(total / 3600) % 24, 'hora', 'horas'], [Math.floor(total / 60) % 60, 'minuto', 'minutos'], [total % 60, 'segundo', 'segundos']];
+  previa.textContent = `Na tela do visitante agora: faltam ${partes.map(([valor, singular, plural]) => `${valor} ${valor === 1 ? singular : plural}`).join(', ')}.`;
+}
+
+async function salvarDataDaFesta(event) {
+  event.preventDefault();
+  if (!state.eventoId) { feedback('#data-festa-feedback', 'Escolha uma festa antes.', true); return; }
+  const data = $('#festa-data').value;
+  // Sem o dia, hora nenhuma diz nada — apagar a data é a forma de tirar a
+  // contagem do ar, e os horários vão junto.
+  const hora = data ? $('#festa-hora').value : '';
+  const horaFim = data ? $('#festa-hora-fim').value : '';
+  // O banco recusa término sem início, e o organizador merece saber disso aqui
+  // em vez de levar um erro de constraint na cara.
+  if (horaFim && !hora) { feedback('#data-festa-feedback', 'Preencha a hora de início antes da hora de término.', true); return; }
+  feedback('#data-festa-feedback', 'Salvando...');
+  try {
+    await updateTable('eventos', { data_evento: data || null, hora_evento: hora || null, hora_fim: horaFim || null, local_evento: $('#festa-local').value.trim() || null }, state.eventoId);
+  } catch (error) { feedback('#data-festa-feedback', error.message, true); return; }
+  await loadEventos();
+  feedback('#data-festa-feedback', data ? 'Salvo. A contagem já está correndo na tela do visitante.' : 'Data removida: a contagem saiu do ar da tela do visitante.');
 }
 
 // A senha da equipe mora em `equipe_acesso`, fora de `eventos` — se fosse
@@ -299,6 +368,10 @@ $('#active-draw').addEventListener('change', renderDrawConsole);
 $('#active-event').addEventListener('change', (event) => selecionarEvento(event.target.value));
 $('#edit-event').addEventListener('click', () => { if (state.eventoId) editor.open('eventos', state.eventoId); });
 $('#codigo-form').addEventListener('submit', salvarCodigoDaEquipe);
+$('#data-festa-form').addEventListener('submit', salvarDataDaFesta);
+// A prévia anda de segundo em segundo: é ela que prova ao organizador que o
+// relógio do visitante está correndo.
+setInterval(renderPrevia, 1000);
 
 document.addEventListener('click', async (event) => {
   const create = event.target.closest('[data-new]');

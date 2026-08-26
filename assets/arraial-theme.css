@@ -865,6 +865,59 @@ body.menu-open .order-bar { display: none; }
   100% { box-shadow: 0 0 0 0 rgba(255, 140, 66, 0); transform: scale(1); }
 }
 
+/* ==========================================================================
+   Contagem regressiva para a festa e o convite para a agenda do celular.
+
+   Fica logo abaixo do sorteio ao vivo de propósito: o que está acontecendo
+   agora ganha o topo; a festa que ainda vem, o lugar seguinte.
+   ========================================================================== */
+.countdown {
+  background: linear-gradient(155deg, rgba(255, 212, 142, .11), rgba(18, 14, 11, .95) 58%);
+  border: 1px solid var(--line-warm);
+  border-radius: 22px;
+  margin: 0 0 30px;
+  padding: 21px 22px 22px;
+}
+.countdown[hidden] { display: none; }
+.countdown h2 { font-size: clamp(1.75rem, 5.6vw, 2.5rem); letter-spacing: -.03em; line-height: 1.04; margin: 5px 0 0; }
+.cd-quando { align-items: center; color: var(--gold); display: flex; font-size: .97rem; font-weight: 600; gap: 9px; line-height: 1.45; margin: 13px 0 0; }
+.cd-quando > svg, .cd-quando > i { color: var(--orange-bright); flex: 0 0 auto; height: 20px; width: 20px; }
+
+.cd-relogio { display: grid; gap: 9px; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 18px; }
+.cd-bloco {
+  background: linear-gradient(160deg, #1e1a17, #121111 72%);
+  border: 1px solid #4d3a2c;
+  border-radius: 15px;
+  padding: 14px 5px 12px;
+  text-align: center;
+}
+.cd-bloco strong {
+  color: var(--gold);
+  display: block;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(2.3rem, 10.5vw, 3.5rem);
+  /* Sem largura fixa por dígito o relógio treme a cada segundo. */
+  font-variant-numeric: tabular-nums;
+  line-height: .88;
+}
+.cd-bloco small { color: var(--muted); display: block; font-size: .68rem; font-weight: 800; letter-spacing: .11em; margin-top: 8px; text-transform: uppercase; }
+
+.cd-acoes { margin-top: 18px; }
+.cd-acoes .primary-button { align-items: center; display: inline-flex; gap: 12px; justify-content: center; width: 100%; }
+.cd-acoes .primary-button > svg, .cd-acoes .primary-button > i { flex: 0 0 auto; height: 22px; width: 22px; }
+.cd-aviso { color: var(--muted); font-size: .87rem; line-height: 1.5; margin: 11px 0 0; }
+.cd-aviso:empty { display: none; }
+
+@media (min-width: 720px) {
+  .cd-relogio { max-width: 520px; }
+  .cd-acoes .primary-button { width: auto; }
+}
+@media (max-width: 620px) {
+  .countdown { border-radius: 19px; margin-bottom: 24px; padding: 17px; }
+  .cd-relogio { gap: 7px; }
+  .cd-bloco { border-radius: 13px; padding: 12px 3px 10px; }
+}
+
 /* --- Interruptor da vibração --------------------------------------------- */
 .vibra-toggle {
   align-items: center;
@@ -1516,6 +1569,13 @@ body.modo-organizador .site-shell { margin-top: 58px; }
 
 .equipe-voltar { color: #a8a6aa; display: inline-block; font-size: .85rem; font-weight: 700; margin-top: 26px; text-decoration: none; }
 .equipe-voltar:hover { color: var(--orange-bright); }
+
+/* Painel: data e hora da festa, com a prévia do que o visitante vê. */
+.data-festa-form { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); margin-top: 14px; }
+.data-festa-form[hidden] { display: none; }
+.data-festa-form label:last-of-type, .data-festa-form .primary-button { grid-column: 1 / -1; }
+.data-festa-previa { border-left: 3px solid #46403c; color: var(--muted); font-size: .88rem; line-height: 1.55; margin: 15px 0 0; padding: 3px 0 3px 13px; }
+.data-festa-previa.is-contando { border-left-color: var(--orange); color: var(--gold); }
 
 /* Painel: senha da equipe e botões que dão baixa no pagamento. */
 .codigo-form { align-items: end; display: flex; gap: 9px; margin-top: 14px; }

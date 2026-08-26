@@ -277,6 +277,215 @@ function renderHome() {
     ${vibracaoControl()}`;
 }
 
+/* ------------------------------------------------------------------ *
+ * Contagem regressiva para a festa
+ *
+ * O relógio corre no horário do próprio celular, e a data vem do painel como
+ * hora de parede ("24/06 às 19h"), sem fuso: é assim que a organização pensa e
+ * é assim que o visitante lê. Por isso a data é montada na mão, campo a campo
+ * — `new Date('2026-06-24T19:00')` até funcionaria, mas a versão com números
+ * evita a interpretação como UTC que já derrubava um dia em `formatDate`.
+ * ------------------------------------------------------------------ */
+// Sem hora de término cadastrada, o convite da agenda dura este tanto.
+const DURACAO_PADRAO_H = 4;
+const doisDigitos = (value) => String(value).padStart(2, '0');
+// O que já está desenhado na tela. Só remontamos o bloco quando o estado muda
+// de verdade (a festa começou, a data foi alterada) — a cada segundo mexemos
+// apenas nos números, senão a animação recomeçaria do zero o tempo todo.
+let countdownDesenhado = '';
+
+function festaInicio(evento) {
+  const dia = String(evento?.data_evento || '').slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dia)) return null;
+  const [ano, mes, diaDoMes] = dia.split('-').map(Number);
+  const [hora, minuto] = String(evento.hora_evento || '00:00').slice(0, 5).split(':').map(Number);
+  const inicio = new Date(ano, mes - 1, diaDoMes, hora || 0, minuto || 0, 0, 0);
+  return Number.isFinite(inicio.getTime()) ? inicio : null;
+}
+
+function festaFim(evento, inicio) {
+  if (!inicio) return null;
+  const fim = new Date(inicio);
+  const termino = String(evento?.hora_fim || '').slice(0, 5);
+  if (/^\d{2}:\d{2}$/.test(termino)) {
+    const [hora, minuto] = termino.split(':').map(Number);
+    fim.setHours(hora, minuto, 0, 0);
+    // Arraial que vira a noite: começa 19h e termina 1h — do dia seguinte.
+    if (fim <= inicio) fim.setDate(fim.getDate() + 1);
+    return fim;
+  }
+  // Festa só com o dia marcado ocupa o dia inteiro; com hora de início, dura
+  // o padrão a partir dela.
+  if (!evento?.hora_evento) { fim.setDate(fim.getDate() + 1); return fim; }
+  fim.setHours(fim.getHours() + DURACAO_PADRAO_H);
+  return fim;
+}
+
+const DIA_E_MES = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+function quandoPorExtenso(inicio, temHora) {
+  // O pt-BR devolve "sábado, 24 de junho"; só a inicial sobe, porque
+  // `capitalize` no CSS deixaria "24 De Junho".
+  const extenso = DIA_E_MES.format(inicio);
+  const dia = extenso.charAt(0).toUpperCase() + extenso.slice(1);
+  if (!temHora) return dia;
+  const hora = inicio.getMinutes() ? `${inicio.getHours()}h${doisDigitos(inicio.getMinutes())}` : `${inicio.getHours()}h`;
+  return `${dia}, às ${hora}`;
+}
+
+function partesDoTempo(ms) {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  return [
+    [Math.floor(total / 86400), 'dia', 'dias'],
+    [Math.floor(total / 3600) % 24, 'hora', 'horas'],
+    [Math.floor(total / 60) % 60, 'min', 'min'],
+    [total % 60, 'seg', 'seg'],
+  ];
+}
+
+function renderCountdown() {
+  const bloco = $('#countdown');
+  if (!bloco) return;
+  const evento = state.evento;
+  const inicio = festaInicio(evento);
+  const fim = festaFim(evento, inicio);
+  const agora = Date.now();
+  // A festa que já acabou some da tela: contagem parada em zero só confunde.
+  const modo = !inicio ? 'oculto' : (agora < inicio ? 'contando' : (agora < fim ? 'agora' : 'oculto'));
+  const assinatura = `${modo}|${inicio?.getTime() ?? ''}`;
+  if (assinatura !== countdownDesenhado) {
+    countdownDesenhado = assinatura;
+    bloco.hidden = modo === 'oculto';
+    bloco.innerHTML = modo === 'contando' ? countdownContando(evento, inicio)
+      : modo === 'agora' ? countdownAgora(evento) : '';
+    refreshIcons();
+  }
+  if (modo === 'contando') atualizarDigitos(inicio - agora);
+}
+
+function countdownContando(evento, inicio) {
+  const digitos = partesDoTempo(inicio - Date.now())
+    .map(([valor, singular, plural], indice) => `<div class="cd-bloco"><strong data-cd="${indice}">${indice ? doisDigitos(valor) : valor}</strong><small data-cd-rotulo="${indice}">${valor === 1 ? singular : plural}</small></div>`)
+    .join('');
+  return `<p class="section-label">Contagem regressiva</p>
+    <h2 id="countdown-title">Falta pouco para o nosso arraial</h2>
+    <p class="cd-quando"><i data-lucide="calendar-days" aria-hidden="true"></i>${escapeHtml(quandoPorExtenso(inicio, Boolean(evento.hora_evento)))}</p>
+    <div class="cd-relogio" role="timer" aria-live="off">${digitos}</div>
+    <div class="cd-acoes">
+      <button class="primary-button" type="button" data-add-agenda><i data-lucide="calendar-plus" aria-hidden="true"></i>Adicionar na agenda</button>
+      <p class="cd-aviso" id="agenda-feedback" role="status"></p>
+    </div>`;
+}
+
+function countdownAgora(evento) {
+  return `<p class="section-label">É agora</p>
+    <h2 id="countdown-title">A festa começou!</h2>
+    <p class="cd-quando"><i data-lucide="party-popper" aria-hidden="true"></i>${escapeHtml(evento.escola || evento.nome)} está com as portas abertas. Bom arraial!</p>
+    <div class="cd-acoes"><button class="primary-button" type="button" data-route="cronograma">Ver a programação <span aria-hidden="true">→</span></button></div>`;
+}
+
+function atualizarDigitos(restante) {
+  partesDoTempo(restante).forEach(([valor, singular, plural], indice) => {
+    const numero = document.querySelector(`[data-cd="${indice}"]`);
+    if (!numero) return;
+    const texto = indice ? doisDigitos(valor) : String(valor);
+    if (numero.textContent !== texto) numero.textContent = texto;
+    const rotulo = document.querySelector(`[data-cd-rotulo="${indice}"]`);
+    const nome = valor === 1 ? singular : plural;
+    if (rotulo && rotulo.textContent !== nome) rotulo.textContent = nome;
+  });
+}
+
+/* ------------------------------------------------------------------ *
+ * "Adicionar na agenda": cria o evento no calendário do celular
+ *
+ * Android abre o app do Google Agenda direto pelo link de template — é o
+ * caminho que exige menos toques de quem está com o celular na mão. iPhone e
+ * computador recebem um arquivo .ics, que o iOS mostra como "Adicionar ao
+ * Calendário" e o computador abre no calendário padrão.
+ * ------------------------------------------------------------------ */
+function dadosDaAgenda() {
+  const evento = state.evento;
+  const inicio = festaInicio(evento);
+  if (!inicio) return null;
+  return {
+    inicio,
+    fim: festaFim(evento, inicio),
+    titulo: [evento.nome, evento.escola].filter(Boolean).join(' — '),
+    local: evento.local_evento || evento.escola || '',
+    endereco: `${location.origin}/${evento.slug}`,
+  };
+}
+
+// Carimbo "de parede", sem Z e sem fuso: o calendário lê a hora exatamente
+// como ela está escrita, que é a hora da festa para quem vai.
+const carimboAgenda = (data) => `${data.getFullYear()}${doisDigitos(data.getMonth() + 1)}${doisDigitos(data.getDate())}T${doisDigitos(data.getHours())}${doisDigitos(data.getMinutes())}00`;
+
+function montarIcs(agenda) {
+  const escapar = (texto) => String(texto).replace(/\\/g, '\\\\').replace(/[;,]/g, (char) => `\\${char}`).replace(/\n/g, '\\n');
+  const detalhes = `Cardápio, sorteios e programação em ${agenda.endereco}`;
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Festa Cultural//Arraial Digital//PT-BR',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    `UID:festa-${state.evento.slug}-${agenda.inicio.getTime()}@festa-cultural`,
+    `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').slice(0, 15)}Z`,
+    `DTSTART:${carimboAgenda(agenda.inicio)}`,
+    `DTEND:${carimboAgenda(agenda.fim)}`,
+    `SUMMARY:${escapar(agenda.titulo)}`,
+    agenda.local ? `LOCATION:${escapar(agenda.local)}` : '',
+    `DESCRIPTION:${escapar(detalhes)}`,
+    `URL:${agenda.endereco}`,
+    // Lembrete duas horas antes, para dar tempo de arrumar e sair de casa.
+    'BEGIN:VALARM',
+    'TRIGGER:-PT2H',
+    'ACTION:DISPLAY',
+    `DESCRIPTION:${escapar(agenda.titulo)}`,
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].filter(Boolean).join('\r\n');
+}
+
+function urlGoogleAgenda(agenda) {
+  const parametros = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: agenda.titulo,
+    dates: `${carimboAgenda(agenda.inicio)}/${carimboAgenda(agenda.fim)}`,
+    details: `Cardápio, sorteios e programação em ${agenda.endereco}`,
+  });
+  if (agenda.local) parametros.set('location', agenda.local);
+  // Sem `ctz` o Google leria os carimbos como UTC e jogaria a festa para outra hora.
+  const fuso = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if (fuso) parametros.set('ctz', fuso);
+  return `https://calendar.google.com/calendar/render?${parametros}`;
+}
+
+function adicionarNaAgenda() {
+  const agenda = dadosDaAgenda();
+  const aviso = $('#agenda-feedback');
+  if (!agenda) return;
+  if (/android/i.test(navigator.userAgent)) {
+    window.open(urlGoogleAgenda(agenda), '_blank', 'noopener');
+    if (aviso) aviso.textContent = 'Abrimos a sua agenda com a festa preenchida. É só confirmar.';
+    return;
+  }
+  const arquivo = new Blob([montarIcs(agenda)], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(arquivo);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${state.evento.slug}.ics`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  // O navegador ainda está lendo o arquivo no instante do clique: soltar a
+  // memória na hora cancelaria o download em alguns aparelhos.
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  if (aviso) aviso.textContent = 'Convite baixado. Toque nele para adicionar ao seu calendário.';
+}
+
 function renderProducts() {
   const items = state.produtos.filter((item) => item.categoria !== 'brincadeira' && (state.category === 'todos' || item.categoria === state.category));
   $('#products-list').innerHTML = items.length ? items.map((item) => `<article class="product-card ${item.status === 'esgotado' ? 'sold-out' : ''}">${renderImage(item.imagem_url, item.nome)}<div class="card-content"><div class="card-topline"><span class="category-tag">${escapeHtml(item.categoria)}</span>${renderStatus(item.status)}</div><h3>${escapeHtml(item.nome)}</h3><p>${escapeHtml(item.descricao || 'Sabor especial da nossa festa.')}</p>${renderAllergens(item)}<div class="card-footer"><strong class="price">${formatMoney(item.preco)}</strong>${orderControls(item)}</div>${chipEditar('produtos', item.id)}</div>${item.status === 'esgotado' ? '<div class="sold-stamp">ESGOTADO</div>' : ''}</article>`).join('') : emptyState('Ainda não há itens nesta categoria. Volte em breve!');
@@ -481,7 +690,7 @@ function renderSchedule() {
   const sorted = [...state.cronograma].sort((a, b) => String(a.horario_previsto).localeCompare(String(b.horario_previsto)));
   $('#schedule-list').innerHTML = sorted.length ? sorted.map((item) => `<article class="timeline-item ${item.status === 'realizado' ? 'done' : ''}"><time>${formatTime(item.horario_previsto)}</time><div><div class="timeline-title"><h3>${escapeHtml(item.evento)}</h3>${renderStatus(item.status)}</div><p>${eventCountdown(item)}</p>${item.sorteio_id ? `<button class="inline-link" type="button" data-open-draw="${item.sorteio_id}">Acompanhar sorteio →</button>` : ''}${chipEditar('cronograma', item.id)}</div></article>`).join('') : emptyState('A programação será publicada em breve.');
 }
-function renderAll() { renderHome(); renderProducts(); renderActivities(); renderDraws(); renderCandidates(); renderCandidateProfile(); renderSchedule(); renderOrder(); renderOrderBar(); refreshIcons(); }
+function renderAll() { renderHome(); renderCountdown(); renderProducts(); renderActivities(); renderDraws(); renderCandidates(); renderCandidateProfile(); renderSchedule(); renderOrder(); renderOrderBar(); refreshIcons(); }
 
 function applyNetworkLabel() {
   if (state.conexao === 'ao-vivo') setNetwork('Informações ao vivo', 'online');
@@ -618,6 +827,7 @@ document.addEventListener('click', (event) => {
   if (event.target.closest('[data-close-profile]')) { fecharPerfil(); return; }
   if (event.target.closest('[data-toggle-chips]')) { state.mostrarChips = !state.mostrarChips; renderAdminBar(); renderAll(); return; }
   if (event.target.closest('[data-toggle-vibracao]')) { toggleVibracao(); return; }
+  if (event.target.closest('[data-add-agenda]')) { adicionarNaAgenda(); return; }
   const rules = event.target.closest('[data-rules]');
   if (rules) { const panel = document.getElementById(`regras-${rules.dataset.rules}`); if (panel) { panel.hidden = !panel.hidden; rules.setAttribute('aria-expanded', String(!panel.hidden)); } return; }
   const route = event.target.closest('[data-route]'); if (route) { event.preventDefault(); routeTo(route.dataset.route); document.body.classList.remove('menu-open'); menuToggle?.setAttribute('aria-expanded', 'false'); menuToggle?.setAttribute('aria-label', 'Abrir menu'); }
@@ -652,6 +862,10 @@ async function iniciar() {
   configureStaticInfo();
   renderOrder(); renderOrderBar();
   setInterval(renderSchedule, 30000);
+  // O relógio da contagem regressiva anda sozinho; o resto da tela continua
+  // vindo do Realtime e do polling.
+  renderCountdown();
+  setInterval(renderCountdown, 1000);
   await loadAll();
   // Quem chegou por um perfil compartilhado cai direto nele.
   const perfilCompartilhado = new URLSearchParams(location.search).get('candidata');

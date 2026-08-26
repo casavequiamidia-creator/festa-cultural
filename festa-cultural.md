@@ -56,6 +56,14 @@ Para garantir o funcionamento em tempo real, as seguintes tabelas precisam ser c
 - `whatsapp` / `instagram` / `facebook` / `tiktok`: text (endereço https completo; o painel converte `@usuario` ou número de telefone em link)
 - `rifa_titulo`, `rifa_descricao`, `rifa_url`: text (rifa online da candidata, exibida na aba Rifa online do perfil)
 
+### Tabela: `eventos` (uma festa por linha)
+Além de `slug`, `nome`, `escola`, `logo_url`, dos campos de PIX e do `whatsapp`, é aqui que mora **quando** a festa acontece:
+
+- `data_evento`: date — o dia. É o que liga a contagem regressiva da tela inicial; vazio, o bloco da contagem nem aparece.
+- `hora_evento`: time — a hora de início. Vazio, a contagem mira a virada do dia e o convite da agenda vira evento de dia inteiro.
+- `hora_fim`: time — só serve ao convite da agenda. Vazio, o convite dura 4 horas. Pode ser **menor** que a de início: arraial que vira a noite termina no dia seguinte. O banco recusa término sem início (`eventos_hora_fim_precisa_inicio_check`).
+- `local_evento`: text — o endereço que vai no evento criado na agenda do celular. Vazio, cai no nome da escola.
+
 ### Tabelas da equipe da escola (uso interno)
 Servem à página `/<festa>/funcionarios`, que não é linkada no site do visitante.
 
@@ -101,6 +109,8 @@ O site será uma Single Page Application (SPA) simples ou um conjunto de página
 
 #### 🏠 3.1. Tela: Início
 - **Destaque Realtime (Banner Hero):** Se a tabela `sorteios` tiver algum item com status `em_andamento`, um card de destaque gigante aparece no topo: *"🔥 SORTEIO EM ANDAMENTO: [Nome do Prêmio]! Clique aqui para acompanhar ao vivo!"*. Ao clicar, redireciona o usuário para a aba de Sorteios.
+- **Contagem Regressiva:** logo abaixo do destaque ao vivo, um relógio conta os dias, horas, minutos e segundos que faltam para a festa, com o dia por extenso ao lado ("Sábado, 24 de junho, às 19h"). O relógio corre no horário do próprio celular e a data é lida como **hora de parede**, sem fuso — é assim que a organização a digita no painel e é assim que o visitante a lê. Enquanto não houver `data_evento` cadastrada o bloco não aparece; passada a hora de término, ele some de novo, e entre uma coisa e outra vira *"A festa começou!"* com atalho para o cronograma.
+- **Botão "Adicionar na agenda":** cria o evento no calendário do celular já com dia, hora, local e um lembrete duas horas antes. No Android abre o app do Google Agenda direto pelo link de template (menos toques com o celular na mão); no iPhone e no computador entrega um arquivo `.ics`, que o iOS mostra como *"Adicionar ao Calendário"*. Os carimbos de hora vão sem fuso, de propósito: o calendário lê a hora exatamente como ela está escrita.
 - **Mural de Patrocinadores:** Seção no rodapé exibindo a logo das empresas parceiras e apoiadoras da escola.
 - **Botão de Ajuda Rápida:** Botão para abrir o WhatsApp de suporte ou dos vendedores ambulantes de cartela.
 
@@ -186,6 +196,12 @@ Página de acesso restrito, protegida por autenticação simples (Supabase Auth)
 
 #### 📅 4.3. Controle do Cronograma
 - Lista de eventos do cronograma com um botão alternador de estado `[Marcar como Realizado]` / `[Reverter para Pendente]`.
+
+#### 🕒 4.5. Data e hora da festa (Contagem Regressiva)
+- Cartão próprio no topo do painel, logo abaixo do seletor de festa: **dia**, **hora de início**, **hora de término** e **local**.
+- Abaixo do formulário, uma prévia andando de segundo em segundo mostra exatamente o que o visitante está vendo agora — é ela que prova que o relógio está correndo.
+- Apagar o dia tira a contagem do ar e limpa os horários junto.
+- Os mesmos campos existem em **Editar dados desta festa** (e no modo organizador dentro do próprio site), para quem prefere mexer em tudo de uma vez.
 
 #### 📢 4.4. Sistema de Avisos Globais (Banner de Notificação)
 - Um campo de texto livre no topo do painel admin com o botão `[Disparar Alerta Público]`.
