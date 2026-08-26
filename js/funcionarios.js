@@ -565,15 +565,11 @@ function renderListaDeFardas() {
 function renderContribuicaoTopo() {
   const evento = state.evento || {};
   const prazo = evento.contribuicao_ate;
-  const temPix = Boolean(evento.pix_chave);
   $('#contribuicao-topo').innerHTML = `<section class="equipe-bloco is-aberto">
     <div class="equipe-bloco-corpo">
       <p class="equipe-texto">${escapeHtml(evento.contribuicao_texto || TEXTO_CONTRIBUICAO_PADRAO)}</p>
       ${prazo ? `<p class="equipe-aviso">Prazo para pagar: <b>${escapeHtml(formatDate(prazo))}</b>.${prazoEncerrado(prazo) ? ' <b>Prazo vencido.</b>' : ''}</p>` : ''}
-      ${temPix
-        ? `<button class="primary-button" type="button" data-copiar-pix="#pix-feedback">Copiar a chave PIX <span aria-hidden="true">⧉</span></button>`
-        : '<p class="medidas-vazia">A organização ainda não cadastrou a chave PIX desta festa.</p>'}
-      <p id="pix-feedback" class="feedback" role="status" aria-live="polite"></p>
+      ${blocoPix('#pix-feedback')}
     </div>
   </section>`;
 }
@@ -785,25 +781,54 @@ function mostrarValorAPagar(total) {
   alvo.hidden = false;
   alvo.innerHTML = `<p class="section-label">Farda salva</p>
     <h3>Envie <strong>${formatMoney(total)}</strong> no PIX</h3>
-    ${evento.pix_chave
-      ? `<button class="primary-button" type="button" data-copiar-pix="#farda-pix-feedback">Copiar a chave PIX <span aria-hidden="true">⧉</span></button>
-         <p id="farda-pix-feedback" class="feedback" role="status" aria-live="polite"></p>`
-      : '<p class="valor-nota">A organização ainda não cadastrou a chave PIX desta festa.</p>'}
+    ${blocoPix('#farda-pix-feedback')}
     ${state.evento?.farda_pagamento_ate ? `<p class="valor-nota">Prazo para pagar: ${escapeHtml(formatDate(state.evento.farda_pagamento_ate))}.</p>` : ''}
     <p class="valor-nota">A organização confirma o recebimento e o seu selo vira <b>Pago</b> na lista abaixo.</p>`;
 }
 
+/* ------------------------------------------------------------------ *
+ * PIX da equipe
+ *
+ * Farda e contribuição são cobrança interna: quem recebe é a pessoa da
+ * coordenação, não a conta da escola que atende o visitante na barraca. Festa
+ * que ainda não cadastrou o PIX próprio da equipe continua caindo no da festa,
+ * como era antes desta separação existir.
+ * ------------------------------------------------------------------ */
+function pixDaEquipe() {
+  const evento = state.evento || {};
+  if (evento.equipe_pix_chave) {
+    return { chave: evento.equipe_pix_chave, favorecido: evento.equipe_pix_favorecido || '', detalhe: evento.equipe_pix_cargo || '' };
+  }
+  return { chave: evento.pix_chave || '', favorecido: evento.pix_favorecido || '', detalhe: evento.pix_banco || '' };
+}
+
+// A chave fica à vista, e não só dentro do botão: quem paga pelo computador ou
+// com o celular de outra pessoa precisa poder digitar, e todo mundo merece ver
+// para quem está mandando antes de mandar.
+function blocoPix(idDaNota, vazio = 'A organização ainda não cadastrou a chave PIX.') {
+  const pix = pixDaEquipe();
+  if (!pix.chave) return `<p class="medidas-vazia">${escapeHtml(vazio)}</p>`;
+  const quem = [pix.favorecido, pix.detalhe].filter(Boolean);
+  return `<div class="equipe-pix">
+        <span class="cartela-label">Chave PIX</span>
+        <code class="equipe-pix-chave">${escapeHtml(pix.chave)}</code>
+        ${quem.length ? `<p class="equipe-pix-quem"><b>${escapeHtml(quem[0])}</b>${quem[1] ? `<small>${escapeHtml(quem[1])}</small>` : ''}</p>` : ''}
+        <button class="primary-button" type="button" data-copiar-pix="${escapeHtml(idDaNota)}">Copiar a chave PIX <span aria-hidden="true">⧉</span></button>
+        <p id="${escapeHtml(idDaNota.slice(1))}" class="feedback" role="status" aria-live="polite"></p>
+      </div>`;
+}
+
 async function copiarPix(seletorDaNota = '#pix-feedback') {
   const nota = $(seletorDaNota);
-  const evento = state.evento || {};
-  const confira = `Confira — Banco: ${evento.pix_banco || 'não informado'} · Beneficiário: ${evento.pix_favorecido || 'não informado'}.`;
+  const pix = pixDaEquipe();
+  const confira = pix.favorecido ? `Confira o nome antes de enviar: ${pix.favorecido}${pix.detalhe ? ` — ${pix.detalhe}` : ''}.` : 'Confira o nome no app do seu banco antes de enviar.';
   try {
-    await navigator.clipboard.writeText(evento.pix_chave);
+    await navigator.clipboard.writeText(pix.chave);
     nota.classList.remove('error');
     nota.textContent = `Chave PIX copiada. ${confira}`;
   } catch {
     nota.classList.add('error');
-    nota.textContent = `Não deu para copiar sozinho. A chave é ${evento.pix_chave}. ${confira}`;
+    nota.textContent = `Não deu para copiar sozinho. A chave é ${pix.chave}. ${confira}`;
   }
 }
 

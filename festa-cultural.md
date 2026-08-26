@@ -73,7 +73,9 @@ Servem à página `/<festa>/funcionarios`, que não é linkada no site do visita
 - `farda_votos`: um voto por funcionário (`unique (funcionario_id)`); votar de novo troca o voto.
 - `equipe_acesso`: `evento_id`, `codigo` — a senha da equipe. Fica **fora** de `eventos` de propósito: aquela tabela é lida com `select *` pelo site público e a senha sairia junto na resposta.
 - `private.funcionario_acesso`: `funcionario_id`, `token`. O token é o que identifica a pessoa no celular dela. Mora em `private` porque, em `public`, qualquer um leria a lista de tokens e agiria pelos colegas.
-- Em `eventos`: `farda_votacao_ate`, `farda_pagamento_ate`, `farda_modelo_id`, `farda_adicional_polo`, `farda_adicional_tamanho`, `contribuicao_ate`, `contribuicao_texto`.
+- Em `eventos`: `farda_votacao_ate`, `farda_pagamento_ate`, `farda_modelo_id`, `farda_adicional_polo`, `farda_adicional_tamanho`, `contribuicao_ate`, `contribuicao_texto`, `equipe_pix_chave`, `equipe_pix_favorecido`, `equipe_pix_cargo`.
+
+**O PIX da equipe não é o PIX da festa.** `pix_chave` é a conta da escola, que atende o visitante na barraca; farda e contribuição são cobrança interna, e quem recebe é a pessoa da coordenação. Por isso as três colunas `equipe_pix_*`. São opcionais: festa que não cadastrou o seu continua caindo no PIX da festa, como era antes desta separação existir.
 
 **Grade de tamanhos.** Duas grades distintas, e o banco não deixa misturar: a feminina vai de `PPBL` a `XGGBL` e a masculina de `PP` a `XGG`. O sufixo `BL` é o que diz à confecção que o molde é baby look, então `funcionarios_grade_coerente_check` exige que `farda_corte = 'feminino'` case exatamente com o tamanho terminado em `BL`. As medidas em centímetros são da confecção, iguais em toda escola, e por isso moram no front-end (`GRADES`, em `js/funcionarios.js`) em vez de num campo por festa — e junto delas o desenho da medição de cada grade (`assets/tecidos/medidas-femininas.png` e `medidas-masculinas.png`), que é o que traduz "48 cm de largura" para quem nunca mediu uma camisa.
 
@@ -174,9 +176,10 @@ Endereço separado, com `noindex`, **não linkado** no site do visitante — só
     - **Modelo:** feminino ou masculino — é essa escolha que define a grade exibida logo abaixo.
     - **Tamanho:** os sete da grade escolhida, com a tabela de medidas em centímetros ao lado e, acima dela, o **desenho da medição** — a camisa deitada, com a seta da altura na lateral e a da largura na barra. É o desenho que diz de onde a onde a confecção mede, e ele muda com a grade: molde baby look no feminino, reto no masculino. `GG`, `XG` e `XGG` (e os `BL` equivalentes) mostram o adicional (`farda_adicional_tamanho`) na etiqueta e na coluna *Adicional* da tabela.
     - **Baby look não é perguntado:** `farda_baby_look` é derivado de `farda_corte`, porque a grade feminina já é a baby look. A coluna continua no banco para a confecção ler no pedido.
-    - **A conta:** ao pé do formulário, o valor discriminado (tecido + adicionais) e o total, atualizado a cada escolha. Depois de salvar, um bloco verde diz **quanto enviar no PIX**, com o botão que copia a chave e o prazo de pagamento.
+    - **A conta:** ao pé do formulário, o valor discriminado (tecido + adicionais) e o total, atualizado a cada escolha. Depois de salvar, um bloco verde diz **quanto enviar no PIX**, com o bloco do PIX da equipe e o prazo de pagamento.
   - *Quem já preencheu:* lista com o nome de cadastro, o resumo das escolhas e o selo **A pagar** (vermelho) ou **Pago** (verde), além do prazo de pagamento.
-- **Aba Contribuição:** texto de abertura, prazo, botão que copia a chave PIX exibindo *"Chave PIX copiada. Confira — Banco: X · Beneficiário: Y."*, e a lista dos funcionários com o setor ao lado do nome, o valor e o mesmo par de selos.
+- **Bloco do PIX** (nas duas abas, depois de salvar a farda e no topo da Contribuição): a **chave à vista** — quem paga pelo computador, ou com o celular de outra pessoa, precisa poder digitar — o **nome e o cargo de quem recebe** logo abaixo, e o botão que copia. Copiada, a nota confirma: *"Chave PIX copiada. Confira o nome antes de enviar: Fulano — Cargo."*
+- **Aba Contribuição:** texto de abertura, prazo, o bloco do PIX, e a lista dos funcionários com o setor ao lado do nome, o valor e o mesmo par de selos.
 - **Quem dá baixa nos pagamentos é a organização**, no painel. O funcionário enxerga o status, mas não o altera.
 
 ---
