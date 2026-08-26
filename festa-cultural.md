@@ -151,7 +151,7 @@ Endereço separado, com `noindex`, **não linkado** no site do visitante — só
 - **Aba Fardas**
   - *Votar no modelo:* grade com as fotos cadastradas pela organização. A arte de cada modelo é um quadrado **1080x1080** com as quatro vistas (polo e t-shirt, frente e costas), então o espaço é 1:1 e a imagem entra inteira, sem recorte; um toque em *Ampliar* abre a arte em tamanho cheio. As nove artes do Arraiá da Casavequia 2026 são arquivo do próprio site (`assets/modelos-de-farda/01.jpg`..`09.jpg`), não upload no bucket: é arte fixa da festa, versionada junto com o código. A organização ainda pode trocar qualquer uma enviando outra pelo painel. Cada card traz o contador de votos e a lista de quem votou ali. Um voto por pessoa; votar de novo troca o voto. Passado `farda_votacao_ate`, a votação fecha e vence o mais votado (empate fica com o cadastrado primeiro; a organização pode impor um modelo em `farda_modelo_id`).
   - *Informações da sua farda:*
-    - **Tecido:** grade com os quatro do catálogo, cada um com foto, preço e um botão *Ver detalhes* que abre um modal flutuante com a foto ampliada, o texto completo e as características da malha.
+    - **Tecido:** grade com os quatro do catálogo, cada um com foto, preço e um botão *Ver detalhes* que abre um modal flutuante com a foto ampliada, o texto completo e as características da malha. As fotos são arquivo do site (`assets/tecidos/*.jpg`), quadradas 1080x1080 como as artes de farda.
     - **Nome nas costas:** um nome e, no máximo, uma inicial.
     - **Gola:** polo ou t-shirt. A opção polo mostra o adicional (`farda_adicional_polo`) na própria etiqueta.
     - **Modelo:** feminino ou masculino — é essa escolha que define a grade exibida logo abaixo.

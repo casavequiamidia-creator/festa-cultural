@@ -1498,7 +1498,7 @@ body.modo-organizador .site-shell { margin-top: 58px; }
   text-align: left;
   width: 100%;
 }
-.tecido-foto { display: block; height: 130px; object-fit: cover; width: 100%; }
+.tecido-foto { aspect-ratio: 1 / 1; background: #0d0d0f; display: block; height: auto; object-fit: cover; width: 100%; }
 .tecido-nome { font-size: 1rem; font-weight: 800; padding: 10px 13px 0; }
 .tecido-preco { color: var(--gold); font-size: 1.08rem; font-weight: 800; padding: 0 13px; }
 .tecido-resumo { color: var(--muted); font-size: .78rem; line-height: 1.4; padding: 2px 13px 0; }
@@ -1533,7 +1533,7 @@ body.modo-organizador .site-shell { margin-top: 58px; }
   max-height: 92vh;
   overflow-y: auto;
 }
-.tecido-modal-foto { border-radius: 23px 23px 0 0; display: block; height: 300px; object-fit: cover; width: 100%; }
+.tecido-modal-foto { aspect-ratio: 1 / 1; background: #0d0d0f; border-radius: 23px 23px 0 0; display: block; height: auto; object-fit: cover; width: 100%; }
 .tecido-modal-corpo { padding: 22px; }
 .tecido-modal-corpo h2 { font-size: clamp(1.7rem, 6vw, 2.2rem); margin: 6px 0 8px; }
 .tecido-modal-preco { color: var(--muted); font-size: .95rem; margin: 0 0 16px; }
@@ -1586,13 +1586,11 @@ body.modo-organizador .site-shell { margin-top: 58px; }
 
 @media (max-width: 620px) {
   .tecido-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .tecido-foto { height: 110px; }
   .tecido-nome { font-size: .92rem; padding: 9px 11px 0; }
   .tecido-preco { font-size: 1rem; padding: 0 11px; }
   .tecido-resumo { padding: 2px 11px 0; }
   .tecido-dialog { max-height: 96vh; width: calc(100vw - 14px); }
   .tecido-modal-card { max-height: 96vh; }
-  .tecido-modal-foto { height: 220px; }
   .tecido-modal-corpo { padding: 18px; }
   .medidas-tabela th, .medidas-tabela td { font-size: .8rem; padding: 8px 3px; }
 }
