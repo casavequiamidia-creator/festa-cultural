@@ -103,7 +103,14 @@ const chaveLocal = () => `festa-cultural:equipe:${state.evento?.slug || slugDaUr
 function carregarEu() { try { const bruto = JSON.parse(localStorage.getItem(chaveLocal()) || 'null'); return bruto?.token ? bruto : null; } catch { return null; } }
 function guardarEu(eu) { try { localStorage.setItem(chaveLocal(), JSON.stringify(eu)); } catch { /* aba anônima: vale só nesta visita */ } }
 
-function setStatus(mensagem, tom = '') { const el = $('#equipe-status'); el.textContent = mensagem; el.className = `network-status equipe-status ${tom}`; }
+// Sem mensagem o indicador some. Repetir "está tudo certo" o tempo todo é
+// ruído: ele só aparece enquanto carrega e quando algo dá errado.
+function setStatus(mensagem, tom = '') {
+  const el = $('#equipe-status');
+  el.hidden = !mensagem;
+  el.textContent = mensagem;
+  el.className = `network-status equipe-status ${tom}`;
+}
 function mostrarErro(mensagem) { const el = $('#equipe-erro'); el.hidden = !mensagem; el.textContent = mensagem || ''; }
 
 // O PostgREST devolve a mensagem do `raise exception` em `message`.
@@ -631,7 +638,7 @@ async function carregarTudo() {
     abrirPortao('O seu cadastro não está mais na lista. Identifique-se de novo.');
     return;
   }
-  setStatus('Informações ao vivo', 'online');
+  setStatus('');
   renderTudo();
 }
 

@@ -1257,6 +1257,8 @@ body.modo-organizador .site-shell { margin-top: 58px; }
 
 /* O .network-status do site é flutuante; aqui ele é uma linha do documento. */
 .equipe-status { display: inline-flex; margin: 0 0 14px; position: static; }
+/* `inline-flex` venceria o display:none que o atributo hidden traz do navegador. */
+.equipe-status[hidden] { display: none; }
 
 .equipe-gate { padding: 22px; }
 .equipe-gate h2 { font-size: 1.7rem; margin: 5px 0 0; }
