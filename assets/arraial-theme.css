@@ -1011,18 +1011,6 @@ body.menu-open .order-bar { display: none; }
 .event-option small { color: #b8b6b6; font-size: .92rem; }
 .event-option i { color: var(--orange-bright); font-size: 2.4rem; font-style: normal; line-height: 1; margin-left: auto; }
 
-/* Nome da escola embaixo do logo, para ninguém confundir as festas. */
-.event-tag {
-  color: var(--gold);
-  font-size: .82rem;
-  font-weight: 700;
-  letter-spacing: .1em;
-  margin: 9px 0 0;
-  text-align: center;
-  text-transform: uppercase;
-}
-.event-tag[hidden] { display: none; }
-
 /* Barra de seleção da festa no painel. */
 .event-bar { border-color: rgba(236, 117, 45, .45); }
 .event-bar select { font-size: 1rem; min-height: 52px; }

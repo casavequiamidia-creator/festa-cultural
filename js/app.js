@@ -62,13 +62,13 @@ async function mostrarSeletor(titulo, texto) {
     : emptyState('Nenhuma festa publicada ainda.');
 }
 
-// Troca o logo e o nome da escola pelos desta festa.
+// Troca o logo desta festa. O nome da escola não vai repetido embaixo dele: a
+// arte do logo já traz o nome, e a tarja "Informações ao vivo" fica ancorada
+// nesse mesmo ponto, por cima do texto.
 function aplicarMarca(evento) {
   if (evento.logo_url) {
     $('#brand-picture').outerHTML = `<img class="brand-logo" src="${escapeHtml(evento.logo_url)}" alt="${escapeHtml(evento.nome)} \u2014 ir para o início" />`;
   }
-  const tag = $('#event-tag');
-  if (evento.escola) { tag.textContent = evento.escola; tag.hidden = false; }
   document.title = `${evento.nome}${evento.escola ? ` | ${evento.escola}` : ''}`;
 }
 
