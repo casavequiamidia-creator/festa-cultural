@@ -103,6 +103,9 @@ O site será uma Single Page Application (SPA) simples ou um conjunto de página
 6. 🎯 Barracas & Brincadeiras
 7. 📅 Cronograma
 
+### Rodapé (todas as páginas)
+Aviso de direito autoral repetido no site do visitante, no painel da organização e na página da equipe — inclusive na tela de escolha da festa, que esconde a `.site-shell` e por isso precisa do seu próprio. Cada uma dessas telas é um endereço que pode ser aberto sozinho, sem passar pelas outras. O texto diz que o site e o código-fonte são de criação e propriedade de **Paulo Roberto Ramalho Magalhães** e oferece o e-mail `01paulorm@gmail.com` a quem quiser usar o sistema. O ano é fixo no HTML (ano da criação, que é o que a lei registra) — não se atualiza sozinho.
+
 ---
 
 ### Detalhamento das Telas (Visitante)

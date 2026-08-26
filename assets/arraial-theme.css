@@ -1727,3 +1727,28 @@ body.modo-organizador .site-shell { margin-top: 58px; }
   .tecido-modal-corpo { padding: 18px; }
   .medidas-tabela th, .medidas-tabela td { font-size: .8rem; padding: 8px 3px; }
 }
+
+/* ==========================================================================
+   Rodapé de direito autoral. Vale para as três páginas: o site do visitante, o
+   painel da organização e a página da equipe.
+   ========================================================================== */
+.site-footer {
+  border-top: 1px solid var(--line);
+  color: var(--muted-deep);
+  font-size: .82rem;
+  line-height: 1.6;
+  margin: 48px auto 0;
+  /* Estreito de propósito: no site do visitante o botão flutuante de ajuda
+     ocupa o canto inferior direito, e texto largo passaria por baixo dele. */
+  max-width: 620px;
+  padding-top: 22px;
+  text-align: center;
+}
+.site-footer p { margin: 0 0 7px; }
+.site-footer p:last-child { margin-bottom: 0; }
+.site-footer b { color: var(--muted); font-weight: 700; }
+.site-footer a { color: var(--orange-bright); text-decoration: none; }
+.site-footer a:hover { text-decoration: underline; }
+/* Só no site do visitante: sobe o texto acima da faixa do botão de ajuda, que
+   fica fixo a 122px do rodapé da tela. */
+.main-content .site-footer { padding-bottom: 52px; }
