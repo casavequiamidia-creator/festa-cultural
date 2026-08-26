@@ -461,7 +461,8 @@ body.menu-open .order-bar { display: none; }
 .order-actions .danger-button { margin-top: 0; min-height: 59px; padding: 0 20px; }
 
 /* --- Barracas: selo de destaque e painel de regras ----------------------- */
-.activity-body { display: flex; flex-direction: column; }
+.activity-body { display: flex; flex: 1; flex-direction: column; }
+.activity-body .card-footer { margin-top: auto; }
 .highlight-tag {
   align-self: flex-start;
   background: rgba(236, 117, 45, .16);
@@ -546,8 +547,6 @@ body.menu-open .order-bar { display: none; }
   .order-line-total { min-width: 0; }
   .order-summary { padding: 20px; }
   .order-actions .primary-button, .order-actions .danger-button { flex: 1 1 100%; }
-  .activity-card { grid-template-columns: 1fr; }
-  .activity-image { border-bottom: 1px solid #302f33; border-right: 0; height: 168px; min-height: 0; }
 }
 
 @media (max-width: 420px) {
@@ -872,6 +871,14 @@ body.menu-open .order-bar { display: none; }
 .sponsor-marquee:hover .sponsor-track,
 .sponsor-marquee:focus-within .sponsor-track { animation-play-state: paused; }
 
+/* O styles.css zera a duração de toda animação do site quando o sistema pede
+   menos movimento, e isso congelava a vitrine no fim do trajeto. Aqui ela é a
+   exceção: rolar sozinha é o que ela faz, e sem isso vira um bloco parado.
+   (Vem depois do reset e com `!important` porque é a única forma de vencê-lo.) */
+@media (prefers-reduced-motion: reduce) {
+  .sponsor-track { animation-duration: 110s !important; }
+}
+
 .sponsor-slot {
   align-items: center;
   background: #141414;
@@ -903,12 +910,6 @@ body.menu-open .order-bar { display: none; }
 }
 .sponsor-cta img { flex: 0 0 auto; height: 36px; width: 36px; }
 
-/* Quem pediu menos movimento no sistema não leva um laço andando na tela: a
-   vitrine vira uma faixa que a própria pessoa arrasta. */
-@media (prefers-reduced-motion: reduce) {
-  .sponsor-marquee { -webkit-mask-image: none; mask-image: none; overflow-x: auto; }
-  .sponsor-track { animation: none; }
-}
 @media (max-width: 620px) {
   .sponsor-slot { margin-right: 11px; padding: 10px; width: 156px; }
   .sponsor-cta { font-size: .91rem; gap: 11px; }

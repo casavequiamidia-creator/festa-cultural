@@ -153,8 +153,22 @@ i[data-lucide] { stroke-width: 1.8; }
 .candidate-card>div:last-child { padding: 18px; }
 .candidate-crown { color: var(--orange); font-size: 1.55rem; }
 .candidate-card strong { color: var(--gold); font-size: .78rem; }
-.activity-card { align-items: stretch; display: grid; gap: 0; grid-template-columns: 104px 1fr; }
-.activity-image { border-right: 1px solid #302f33; min-height: 100%; object-fit: cover; width: 100%; }
+/* A arte da barraca é cartaz, com nome e valor escritos nela: cortar as bordas
+   apagava justamente o que ela tem para dizer. Por isso a imagem vai no topo,
+   ocupando a largura do card, e a altura sai da proporção dela mesma. */
+.activity-card { display: flex; flex-direction: column; }
+.activity-image {
+  border-bottom: 1px solid #302f33;
+  display: block;
+  height: auto;
+  /* Teto para o cartaz muito alto não virar um card de meia tela. Passando
+     disso a imagem encolhe inteira, com faixa nas laterais — nunca cortada. */
+  max-height: 420px;
+  object-fit: contain;
+  width: 100%;
+}
+/* O espaço vazio não tem imagem de onde tirar a altura: reserva uma faixa. */
+.activity-image.image-placeholder { aspect-ratio: 16 / 9; }
 .activity-card>div:last-child { padding: 18px; }
 .timeline { border-left: 1px solid #704325; margin-left: 13px; max-width: 880px; padding-left: 27px; }
 .timeline-item { display: grid; gap: 14px; grid-template-columns: 75px 1fr; margin: 0 0 27px; position: relative; }
@@ -246,7 +260,6 @@ i[data-lucide] { stroke-width: 1.8; }
   .qr-placeholder { justify-self: center; max-width: 280px; width: 100%; }
   .product-grid, .draw-grid, .candidate-grid { grid-template-columns: 1fr; }
   .activity-grid { grid-template-columns: 1fr; }
-  .activity-card { grid-template-columns: 92px 1fr; }
   .bingo-board { gap: 3px; }
   .bingo-board>div { min-height: 140px; padding: 4px; }
   .bingo-board b { margin: -4px -4px 5px; }
