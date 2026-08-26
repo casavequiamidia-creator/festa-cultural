@@ -153,6 +153,14 @@ function modeloEscolhido() {
 
 // Sem foto o espaço reservado diz por que está vazio. Um retângulo mudo
 // parecia imagem quebrada, e quem abria a página achava que era erro.
+// A arte pode ser arquivo do próprio site (/assets/...) ou um endereço do
+// bucket. Qualquer outro esquema não vira link.
+const linkDeImagem = (valor) => {
+  const bruto = String(valor || '').trim();
+  if (/^https?:\/\//i.test(bruto)) return bruto;
+  return bruto.startsWith('/') && !bruto.startsWith('//') ? bruto : '';
+};
+
 function renderImagem(url, alt, classe, vazio = 'Foto ainda não enviada') {
   return url
     ? `<img class="${classe}" src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" loading="lazy" />`
@@ -173,9 +181,9 @@ function renderDestaque() {
   bloco.hidden = false;
   bloco.innerHTML = `<p class="section-label">Modelo escolhido</p>
     <h2>${escapeHtml(modelo.nome)}</h2>
-    <button class="modelo-lupa" type="button" data-modelo-foto="${modelo.id}" aria-label="Ver a arte de ${escapeHtml(modelo.nome)} em tamanho cheio">
+    <button class="foto-quadro" type="button" data-modelo-foto="${modelo.id}" aria-label="Maximizar a arte de ${escapeHtml(modelo.nome)}">
       ${renderImagem(modelo.imagem_url, modelo.nome, 'destaque-foto')}
-      <span class="modelo-ampliar" aria-hidden="true">Ampliar</span>
+      <span class="modelo-ampliar" aria-hidden="true">Maximizar</span>
     </button>
     ${modelo.descricao ? `<p class="destaque-nota">${escapeHtml(modelo.descricao)}</p>` : ''}
     <button class="primary-button" type="button" data-abrir-farda>${jaPreencheu ? 'Revisar seus dados' : 'Preencha seus dados'} <span aria-hidden="true">→</span></button>`;
@@ -201,9 +209,9 @@ function cardDoModelo(modelo, encerrada) {
     : '<p class="voto-vazio">Ninguém votou neste modelo ainda.</p>';
   return `<article class="modelo-card${eMeuVoto ? ' is-meu' : ''}">
     <div class="modelo-media">
-      <button class="modelo-lupa" type="button" data-modelo-foto="${modelo.id}" aria-label="Ver a arte de ${escapeHtml(modelo.nome)} em tamanho cheio">
+      <button class="foto-quadro" type="button" data-modelo-foto="${modelo.id}" aria-label="Maximizar a arte de ${escapeHtml(modelo.nome)}">
         ${renderImagem(modelo.imagem_url, modelo.nome, 'modelo-foto')}
-        <span class="modelo-ampliar" aria-hidden="true">Ampliar</span>
+        <span class="modelo-ampliar" aria-hidden="true">Maximizar</span>
       </button>
       <span class="modelo-votos" title="${votantes.length} ${votantes.length === 1 ? 'voto' : 'votos'}">${votantes.length} ${votantes.length === 1 ? 'voto' : 'votos'}</span>
     </div>
@@ -265,7 +273,7 @@ function blocoDeTecidos() {
     const escolhido = Number(rascunho.farda_tecido_id) === Number(tecido.id);
     return `<article class="tecido-card${escolhido ? ' is-escolhido' : ''}">
       <button class="tecido-escolher" type="button" data-tecido="${tecido.id}" aria-pressed="${escolhido}">
-        ${renderImagem(tecido.imagem_url, `tecido ${tecido.nome}`, 'tecido-foto')}
+        <span class="foto-quadro">${renderImagem(tecido.imagem_url, `tecido ${tecido.nome}`, 'tecido-foto')}</span>
         <span class="tecido-nome">${escapeHtml(tecido.nome)}</span>
         <span class="tecido-preco">${formatMoney(tecido.preco)}</span>
         ${tecido.resumo ? `<span class="tecido-resumo">${escapeHtml(tecido.resumo)}</span>` : ''}
@@ -275,21 +283,125 @@ function blocoDeTecidos() {
   }).join('')}</div>`;
 }
 
-// A arte é um 1080x1080 com as quatro vistas do modelo; no card ela não passa
-// de uma miniatura, e é por ela que a pessoa decide o voto.
+/* --- Visualizador com zoom ----------------------------------------- *
+ * A arte é um 1080x1080 com as quatro vistas do modelo. No card ela não passa
+ * de miniatura, e é por ela que a pessoa decide o voto — então precisa abrir
+ * grande e deixar aproximar para conferir gola, manga e estampa.
+ *
+ * A pinça é tratada aqui, e não pelo navegador: dentro de um <dialog> o zoom
+ * nativo amplia a página inteira e leva a pessoa para fora da imagem.
+ * ------------------------------------------------------------------ */
+const ESCALA_MAXIMA = 5;
+
+function criarZoom(palco, foto) {
+  let escala = 1;
+  let x = 0;
+  let y = 0;
+  const ponteiros = new Map();
+  let pinca = null;
+  let ultimoToque = 0;
+
+  const distanciaEntre = () => {
+    const [a, b] = [...ponteiros.values()];
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  };
+
+  function aplicar() {
+    // Sem limite a imagem escaparia da moldura e a pessoa perderia a arte.
+    const caixa = palco.getBoundingClientRect();
+    const folgaX = Math.max(0, (caixa.width * escala - caixa.width) / 2);
+    const folgaY = Math.max(0, (caixa.height * escala - caixa.height) / 2);
+    x = Math.min(folgaX, Math.max(-folgaX, x));
+    y = Math.min(folgaY, Math.max(-folgaY, y));
+    foto.style.transform = `translate(${x}px, ${y}px) scale(${escala})`;
+    palco.classList.toggle('is-ampliado', escala > 1.01);
+    const rotulo = palco.parentElement?.querySelector('[data-zoom-nivel]');
+    if (rotulo) rotulo.textContent = `${Math.round(escala * 100)}%`;
+  }
+
+  function definirEscala(nova) {
+    escala = Math.min(ESCALA_MAXIMA, Math.max(1, nova));
+    if (escala <= 1.001) { escala = 1; x = 0; y = 0; }
+    aplicar();
+  }
+
+  palco.addEventListener('pointerdown', (evento) => {
+    palco.setPointerCapture(evento.pointerId);
+    ponteiros.set(evento.pointerId, { x: evento.clientX, y: evento.clientY });
+    palco.classList.add('is-arrastando');
+    if (ponteiros.size === 2) pinca = { distancia: distanciaEntre(), escala };
+  });
+
+  palco.addEventListener('pointermove', (evento) => {
+    const anterior = ponteiros.get(evento.pointerId);
+    if (!anterior) return;
+    ponteiros.set(evento.pointerId, { x: evento.clientX, y: evento.clientY });
+    if (ponteiros.size >= 2 && pinca) {
+      definirEscala(pinca.escala * (distanciaEntre() / pinca.distancia));
+      return;
+    }
+    // Um dedo só arrasta quando há o que arrastar.
+    if (escala > 1) {
+      x += evento.clientX - anterior.x;
+      y += evento.clientY - anterior.y;
+      aplicar();
+    }
+  });
+
+  const soltar = (evento) => {
+    ponteiros.delete(evento.pointerId);
+    if (ponteiros.size < 2) pinca = null;
+    if (!ponteiros.size) palco.classList.remove('is-arrastando');
+  };
+  palco.addEventListener('pointerup', (evento) => {
+    // Dois toques seguidos alternam entre a arte inteira e 2,5x.
+    const agora = Date.now();
+    if (!ponteiros.size || ponteiros.size === 1) {
+      if (agora - ultimoToque < 320) definirEscala(escala > 1 ? 1 : 2.5);
+      ultimoToque = agora;
+    }
+    soltar(evento);
+  });
+  palco.addEventListener('pointercancel', soltar);
+
+  // No computador, a roda do mouse faz o papel da pinça.
+  palco.addEventListener('wheel', (evento) => {
+    evento.preventDefault();
+    definirEscala(escala * (evento.deltaY < 0 ? 1.15 : 1 / 1.15));
+  }, { passive: false });
+
+  aplicar();
+  return { definirEscala, get escala() { return escala; } };
+}
+
+let zoomAtual = null;
+
 function abrirModelo(id) {
   const modelo = state.modelos.find((item) => Number(item.id) === Number(id));
   const dialogo = $('#modelo-modal');
   if (!modelo || !dialogo) return;
+  const arte = linkDeImagem(modelo.imagem_url);
   dialogo.innerHTML = `<button class="profile-close" type="button" data-fechar-modelo aria-label="Fechar a arte do modelo">×</button>
     <figure class="modelo-lightbox">
-      ${renderImagem(modelo.imagem_url, `arte do ${modelo.nome}`, 'modelo-lightbox-foto')}
+      <div class="zoom-palco" id="zoom-palco">
+        ${renderImagem(modelo.imagem_url, `arte do ${modelo.nome}`, 'zoom-foto')}
+      </div>
       <figcaption>
         <strong id="modelo-nome">${escapeHtml(modelo.nome)}</strong>
         ${modelo.descricao ? `<span>${escapeHtml(modelo.descricao)}</span>` : ''}
+        <div class="zoom-controles">
+          <button type="button" data-zoom="menos" aria-label="Diminuir">−</button>
+          <button type="button" data-zoom="reset" data-zoom-nivel>100%</button>
+          <button type="button" data-zoom="mais" aria-label="Aumentar">+</button>
+          ${arte ? `<a href="${escapeHtml(arte)}" target="_blank" rel="noopener">Abrir a imagem</a>` : ''}
+        </div>
+        <p class="zoom-dica">Aproxime com dois dedos, ou toque duas vezes na arte. Arraste para andar pela imagem.</p>
       </figcaption>
     </figure>`;
   if (!dialogo.open) dialogo.showModal();
+  const palco = $('#zoom-palco');
+  const foto = palco?.querySelector('img');
+  zoomAtual = foto ? criarZoom(palco, foto) : null;
 }
 
 function abrirTecido(id) {
@@ -299,7 +411,7 @@ function abrirTecido(id) {
   const itens = String(tecido.caracteristicas || '').split('\n').map((linha) => linha.trim()).filter(Boolean);
   dialogo.innerHTML = `<button class="profile-close" type="button" data-fechar-tecido aria-label="Fechar detalhes do tecido">×</button>
     <article class="tecido-modal-card">
-      ${renderImagem(tecido.imagem_url, `tecido ${tecido.nome}`, 'tecido-modal-foto')}
+      <div class="foto-quadro tecido-modal-quadro">${renderImagem(tecido.imagem_url, `tecido ${tecido.nome}`, 'tecido-modal-foto')}</div>
       <div class="tecido-modal-corpo">
         <p class="section-label">${escapeHtml(tecido.resumo || 'Tecido')}</p>
         <h2 id="tecido-nome">${escapeHtml(tecido.nome)}</h2>
@@ -697,6 +809,12 @@ document.addEventListener('click', (event) => {
   const verModelo = event.target.closest('[data-modelo-foto]');
   if (verModelo) { abrirModelo(verModelo.dataset.modeloFoto); return; }
   if (event.target.closest('[data-fechar-modelo]')) { $('#modelo-modal')?.close(); return; }
+  const zoom = event.target.closest('[data-zoom]');
+  if (zoom && zoomAtual) {
+    const passo = { mais: zoomAtual.escala * 1.4, menos: zoomAtual.escala / 1.4, reset: 1 };
+    zoomAtual.definirEscala(passo[zoom.dataset.zoom] ?? 1);
+    return;
+  }
 
   const verTecido = event.target.closest('[data-tecido-detalhe]');
   if (verTecido) { abrirTecido(verTecido.dataset.tecidoDetalhe); return; }
