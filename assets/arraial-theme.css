@@ -184,17 +184,6 @@ body::before {
 .primary-button { border-radius: 15px; font-size: 1.08rem; min-height: 68px; padding: 0 28px; }
 .primary-button span { font-size: 1.7rem; line-height: 0; margin-left: 19px; vertical-align: -2px; }
 
-.hero-illustration {
-  aspect-ratio: 16 / 9;
-  background: linear-gradient(180deg, rgba(8, 8, 8, .02), rgba(8, 8, 8, .08)), url('./arraial-noturno.png') center / cover;
-  border: 1px solid rgba(190, 99, 39, .62);
-  border-radius: 20px;
-  box-shadow: none;
-  margin: 29px 0 23px;
-  max-width: none;
-  width: 100%;
-}
-
 .quick-grid { border: 0; display: grid; gap: 13px; grid-template-columns: 1fr; margin-top: 0; padding: 0; }
 .quick-grid::before { display: none; }
 .quick-card {
@@ -267,7 +256,6 @@ body.menu-open .menu-toggle { position: fixed; z-index: 60; }
   .hero-grid h1 { font-size: clamp(3.2rem, 13.3vw, 4.4rem); margin-top: 23px; }
   .lead { font-size: 1rem; }
   .primary-button { min-height: 62px; }
-  .hero-illustration { border-radius: 17px; margin-top: 27px; }
   .quick-card { min-height: 104px; padding: 16px 18px; }
   .quick-card>svg { height: 43px; width: 43px; }
   .quick-card strong { font-size: 1.03rem; }
