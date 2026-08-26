@@ -84,7 +84,6 @@ i[data-lucide] { stroke-width: 1.8; }
 .quick-card small { color: #b0aeb2; font-size: .85rem; line-height: 1.52; }
 .sponsors-section { margin-top: 64px; }
 .sponsors-section h2 { font-size: 2rem; margin-bottom: 20px; }
-.sponsors { display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .sponsor-slot { border: 1px dashed #3d3b3d; border-radius: 14px; height: 110px; }
 
 .section-header { align-items: center; display: flex; justify-content: space-between; margin: 12px 0 29px; }
@@ -240,8 +239,7 @@ i[data-lucide] { stroke-width: 1.8; }
   .quick-grid { grid-template-columns: 1fr; margin-top: 34px; }
   .quick-card { min-height: 100px; padding: 17px 18px; }
   .quick-card>svg { height: 37px; width: 37px; }
-  .sponsors { grid-template-columns: repeat(3, 1fr); }
-  .sponsor-slot { height: 70px; }
+  .sponsor-slot { height: 84px; }
   .section-header { margin-top: 8px; }
   .section-icon { height: 33px; width: 33px; }
   .pix-layout { grid-template-columns: 1fr; }

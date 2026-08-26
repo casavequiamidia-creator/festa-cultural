@@ -486,6 +486,39 @@ function adicionarNaAgenda() {
   if (aviso) aviso.textContent = 'Convite baixado. Toque nele para adicionar ao seu calendário.';
 }
 
+/* ------------------------------------------------------------------ *
+ * Apoio & patrocinadores
+ *
+ * Doze espaços fixos rolando em laço. Preencher um é só acrescentar
+ * { nome, logo, url } na lista abaixo, na ordem em que devem aparecer — os
+ * que sobrarem continuam convidando quem ainda não patrocinou.
+ * ------------------------------------------------------------------ */
+const TOTAL_DE_APOIOS = 12;
+const APOIADORES = [];
+
+function cardDeApoio(apoio, oculto) {
+  // A cópia que fecha o laço repete o mesmo conteúdo; para quem usa leitor de
+  // tela ela não existe, senão a lista seria lida duas vezes.
+  const esconde = oculto ? ' aria-hidden="true"' : '';
+  if (!apoio) {
+    return `<div class="sponsor-slot is-vago"${esconde}><strong>Sua marca aqui</strong><small>nos apoie</small></div>`;
+  }
+  const marca = `<img class="sponsor-logo" src="${escapeHtml(apoio.logo)}" alt="${escapeHtml(apoio.nome)}" loading="lazy" />`;
+  const conteudo = apoio.url ? `<a href="${escapeHtml(apoio.url)}" target="_blank" rel="noopener">${marca}</a>` : marca;
+  return `<div class="sponsor-slot"${esconde}>${conteudo}</div>`;
+}
+
+function renderSponsors() {
+  const trilha = $('#sponsor-track');
+  if (!trilha) return;
+  const posicoes = Array.from({ length: TOTAL_DE_APOIOS }, (_, posicao) => APOIADORES[posicao] || null);
+  // Duas voltas idênticas na mesma trilha: quando a primeira termina de sair
+  // pela esquerda, a segunda está exatamente onde ela começou, e a animação
+  // volta ao início sem emenda visível.
+  trilha.innerHTML = posicoes.map((apoio) => cardDeApoio(apoio, false)).join('')
+    + posicoes.map((apoio) => cardDeApoio(apoio, true)).join('');
+}
+
 function renderProducts() {
   const items = state.produtos.filter((item) => item.categoria !== 'brincadeira' && (state.category === 'todos' || item.categoria === state.category));
   $('#products-list').innerHTML = items.length ? items.map((item) => `<article class="product-card ${item.status === 'esgotado' ? 'sold-out' : ''}">${renderImage(item.imagem_url, item.nome)}<div class="card-content"><div class="card-topline"><span class="category-tag">${escapeHtml(item.categoria)}</span>${renderStatus(item.status)}</div><h3>${escapeHtml(item.nome)}</h3><p>${escapeHtml(item.descricao || 'Sabor especial da nossa festa.')}</p>${renderAllergens(item)}<div class="card-footer"><strong class="price">${formatMoney(item.preco)}</strong>${orderControls(item)}</div>${chipEditar('produtos', item.id)}</div>${item.status === 'esgotado' ? '<div class="sold-stamp">ESGOTADO</div>' : ''}</article>`).join('') : emptyState('Ainda não há itens nesta categoria. Volte em breve!');
@@ -804,12 +837,17 @@ async function subscribeRealtime() {
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { loadAll(); if (state.conexao !== 'ao-vivo') agendarReconexao(); } });
 window.addEventListener('online', () => { loadAll(); agendarReconexao(); });
 
-const menuToggle = document.querySelector('.menu-toggle');
-menuToggle?.addEventListener('click', () => {
-  const isOpen = document.body.classList.toggle('menu-open');
-  menuToggle.setAttribute('aria-expanded', String(isOpen));
-  menuToggle.setAttribute('aria-label', isOpen ? 'Fechar menu' : 'Abrir menu');
-});
+// O menu completo abre e fecha pelo "Mais", na barra de baixo — o mesmo dedo
+// que navega. Não há mais botão no alto da tela.
+const menuToggle = document.querySelector('[data-toggle-menu]');
+function abrirMenu(aberto) {
+  document.body.classList.toggle('menu-open', aberto);
+  menuToggle?.setAttribute('aria-expanded', String(aberto));
+  menuToggle?.setAttribute('aria-label', aberto ? 'Fechar o menu' : 'Ver todas as telas');
+}
+menuToggle?.addEventListener('click', () => abrirMenu(!document.body.classList.contains('menu-open')));
+// Menu aberto tapa a tela inteira; o Esc é a saída que o teclado espera.
+document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && document.body.classList.contains('menu-open')) abrirMenu(false); });
 
 document.addEventListener('click', (event) => {
   const increase = event.target.closest('[data-order-inc]');
@@ -830,7 +868,7 @@ document.addEventListener('click', (event) => {
   if (event.target.closest('[data-add-agenda]')) { adicionarNaAgenda(); return; }
   const rules = event.target.closest('[data-rules]');
   if (rules) { const panel = document.getElementById(`regras-${rules.dataset.rules}`); if (panel) { panel.hidden = !panel.hidden; rules.setAttribute('aria-expanded', String(!panel.hidden)); } return; }
-  const route = event.target.closest('[data-route]'); if (route) { event.preventDefault(); routeTo(route.dataset.route); document.body.classList.remove('menu-open'); menuToggle?.setAttribute('aria-expanded', 'false'); menuToggle?.setAttribute('aria-label', 'Abrir menu'); }
+  const route = event.target.closest('[data-route]'); if (route) { event.preventDefault(); routeTo(route.dataset.route); abrirMenu(false); }
   const draw = event.target.closest('[data-open-draw]'); if (draw) { state.selectedDrawId = Number(draw.dataset.openDraw); routeTo('sorteios'); renderDrawDetail(); $('#draw-detail').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 });
 const perfilDialogo = $('#candidate-profile');
@@ -861,6 +899,7 @@ async function iniciar() {
   aplicarMarca(evento);
   configureStaticInfo();
   renderOrder(); renderOrderBar();
+  renderSponsors();
   setInterval(renderSchedule, 30000);
   // O relógio da contagem regressiva anda sozinho; o resto da tela continua
   // vindo do Realtime e do polling.

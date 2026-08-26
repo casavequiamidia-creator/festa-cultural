@@ -13,5 +13,5 @@ export const EVENT_CONFIG = {
   pixHolder: 'APM — Escola Exemplo (fictício)',
   pixBank: 'Banco Exemplo S.A. (fictício)',
   pixQrImage: '',
-  whatsappNumber: '5511900000000', // fictício: troque pelo WhatsApp real da organização
+  whatsappNumber: '5568974003616', // (68) 97400-3616 — vale para a festa que não tiver o próprio cadastrado no painel
 };

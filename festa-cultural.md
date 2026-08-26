@@ -94,14 +94,17 @@ Servem à página `/<festa>/funcionarios`, que não é linkada no site do visita
 
 O site será uma Single Page Application (SPA) simples ou um conjunto de páginas interligadas por uma **Sidebar Lateral** (que se transforma em uma barra de navegação inferior em dispositivos móveis).
 
-### Menu de Navegação (Sidebar)
-1. 🏠 Início
-2. 🍔 Cardápio
-3. 📱 PIX
-4. 🎟️ Sorteios & Bingo
-5. 👑 Rainha Caipira
-6. 🎯 Barracas & Brincadeiras
-7. 📅 Cronograma
+### Menu de Navegação
+Barra flutuante no rodapé da tela, com **cinco** itens à mão — Início, Cardápio, PIX, Sorteios e **Mais**. O botão *Mais* abre a lista inteira por cima da tela e vira *Fechar* no mesmo lugar; é o único caminho para o menu completo, já que não há mais botão no alto da página. As telas que só moram no menu levam a classe `so-no-menu` no HTML (nada de `nth-child`, que quebrava a cada botão novo).
+
+1. 🏠 Início — na barra
+2. 🍔 Cardápio — na barra
+3. 📱 PIX — na barra
+4. 🎟️ Sorteios & Bingo — na barra
+5. 👑 Rainha Caipira — no *Mais*
+6. 🎯 Barracas & Brincadeiras — no *Mais*
+7. 📅 Cronograma — no *Mais*
+8. 📋 Minha lista — no *Mais*
 
 ### Rodapé (todas as páginas)
 Aviso de direito autoral repetido no site do visitante, no painel da organização e na página da equipe — inclusive na tela de escolha da festa, que esconde a `.site-shell` e por isso precisa do seu próprio. Cada uma dessas telas é um endereço que pode ser aberto sozinho, sem passar pelas outras. O texto diz que o site e o código-fonte são de criação e propriedade de **Paulo Roberto Ramalho Magalhães** e oferece o e-mail `01paulorm@gmail.com` a quem quiser usar o sistema. O ano é fixo no HTML (ano da criação, que é o que a lei registra) — não se atualiza sozinho.
@@ -114,8 +117,8 @@ Aviso de direito autoral repetido no site do visitante, no painel da organizaç�
 - **Destaque Realtime (Banner Hero):** Se a tabela `sorteios` tiver algum item com status `em_andamento`, um card de destaque gigante aparece no topo: *"🔥 SORTEIO EM ANDAMENTO: [Nome do Prêmio]! Clique aqui para acompanhar ao vivo!"*. Ao clicar, redireciona o usuário para a aba de Sorteios.
 - **Contagem Regressiva:** logo abaixo do destaque ao vivo, um relógio conta os dias, horas, minutos e segundos que faltam para a festa, com o dia por extenso ao lado ("Sábado, 24 de junho, às 19h"). O relógio corre no horário do próprio celular e a data é lida como **hora de parede**, sem fuso — é assim que a organização a digita no painel e é assim que o visitante a lê. Enquanto não houver `data_evento` cadastrada o bloco não aparece; passada a hora de término, ele some de novo, e entre uma coisa e outra vira *"A festa começou!"* com atalho para o cronograma.
 - **Botão "Adicionar na agenda":** cria o evento no calendário do celular já com dia, hora, local e um lembrete duas horas antes. No Android abre o app do Google Agenda direto pelo link de template (menos toques com o celular na mão); no iPhone e no computador entrega um arquivo `.ics`, que o iOS mostra como *"Adicionar ao Calendário"*. Os carimbos de hora vão sem fuso, de propósito: o calendário lê a hora exatamente como ela está escrita.
-- **Mural de Patrocinadores:** Seção no rodapé exibindo a logo das empresas parceiras e apoiadoras da escola.
-- **Botão de Ajuda Rápida:** Botão para abrir o WhatsApp de suporte ou dos vendedores ambulantes de cartela.
+- **Apoio & patrocinadores:** doze espaços rolando em laço horizontal, devagar (cerca de 20 px/s — um card leva uns 9 segundos para andar a própria largura). A trilha carrega **duas voltas idênticas** e a animação anda exatamente meia trilha, então a emenda cai em cima de si mesma e o laço não dá pulo; por isso o espaçamento é `margin-right` de cada card, e não `gap` — com `gap` sobraria meio vão na emenda. Dedo ou cursor em cima segura a rolagem. Espaço vazio convida: **"Sua marca aqui — nos apoie"**. Quem tem `prefers-reduced-motion` não vê nada se mexer: a vitrine vira uma faixa que a própria pessoa arrasta. Os apoiadores moram na lista `APOIADORES`, em `js/app.js` — preencher um é acrescentar `{ nome, logo, url }`. Abaixo da vitrine, a chamada que manda tocar no botão do WhatsApp para garantir a marca.
+- **Botão de Ajuda Rápida:** o botão flutuante do canto inferior direito é a **logo do WhatsApp** (`assets/whatsapp.png`), sem fundo nem borda — a arte já é um círculo verde com anel branco. Leva a `wa.me` com o número de `eventos.whatsapp`, ou o reserva de `EVENT_CONFIG` quando a festa não tem o seu.
 
 #### 🍔 3.2. Tela: Cardápio Digital
 - **Aviso Estratégico no Topo (Fixo):** *"💡 Vai pagar no PIX? Copie a chave na aba PIX e abra o app do seu banco antes de entrar na fila!"*

@@ -86,25 +86,6 @@ body::before {
 .brand em { color: #f6f5f4; }
 .brand small { display: none; }
 
-.menu-toggle {
-  align-items: center;
-  background: linear-gradient(145deg, #171717, #101010);
-  border: 1px solid #444;
-  border-radius: 21px;
-  color: #ddd;
-  display: flex;
-  height: 70px;
-  justify-content: center;
-  left: 29px;
-  position: absolute;
-  top: 37px;
-  transition: .2s ease;
-  width: 70px;
-  z-index: 30;
-}
-.menu-toggle:hover, .menu-toggle[aria-expanded="true"] { border-color: var(--orange); color: var(--orange-bright); }
-.menu-toggle svg { height: 34px; width: 34px; }
-
 .nav-links {
   backdrop-filter: blur(18px);
   background: linear-gradient(110deg, rgba(19, 19, 19, .97), rgba(12, 12, 12, .94));
@@ -139,7 +120,7 @@ body::before {
 }
 .nav-link svg { color: currentColor; height: 29px; width: 29px; }
 .nav-link.active { background: radial-gradient(circle at 50% 100%, rgba(238, 117, 45, .18), transparent 78%), #1a1715; border-color: rgba(236, 117, 45, .58); box-shadow: 0 0 18px rgba(236, 117, 45, .13), inset 0 0 16px rgba(236, 117, 45, .06); color: var(--orange-bright); }
-.nav-link:nth-child(5), .nav-link:nth-child(6) { display: none; }
+.nav-link.so-no-menu { display: none; }
 .admin-link { display: none; }
 
 .main-content {
@@ -221,7 +202,27 @@ body::before {
 .draw-detail, .bingo-board, .number-history, .timeline-item { background: #171717; border-color: #343434; }
 .timeline { border-color: #473525; }
 .timeline-item::before { background: var(--orange-bright); box-shadow: 0 0 0 5px #111; }
-.help-button { bottom: 122px; right: max(24px, calc((100vw - 870px) / 2 + 20px)); }
+/* A logo do WhatsApp já é um círculo verde com anel branco: fundo e borda do
+   botão só a sujariam. */
+.help-button {
+  background: none;
+  border: 0;
+  bottom: 122px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .45);
+  height: 62px;
+  padding: 0;
+  right: max(24px, calc((100vw - 870px) / 2 + 20px));
+  width: 62px;
+}
+.help-button img { display: block; height: 100%; width: 100%; }
+
+/* "Mais" é o único caminho para o menu completo. Ele troca de cara quando o
+   menu abre: mesmo botão, mesmo lugar, agora fechando. */
+.nav-mais-face { align-items: center; display: flex; flex-direction: column; gap: 5px; }
+.nav-mais-fechar { display: none; }
+body.menu-open .nav-mais-abrir { display: none; }
+body.menu-open .nav-mais-fechar { display: flex; }
+body.menu-open .nav-mais { border-color: var(--line-warm); color: var(--orange-bright); }
 
 body.menu-open { overflow: hidden; }
 body.menu-open .nav-links {
@@ -232,14 +233,14 @@ body.menu-open .nav-links {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   left: 0;
-  padding: 142px 28px 34px;
+  overflow-y: auto;
+  padding: 34px 28px 34px;
   top: 0;
   transform: none;
   width: 100%;
 }
 body.menu-open .nav-link { align-items: center; background: #171717; border-color: #303030; min-height: 106px; }
-body.menu-open .nav-link:nth-child(5), body.menu-open .nav-link:nth-child(6) { display: flex; }
-body.menu-open .menu-toggle { position: fixed; z-index: 60; }
+body.menu-open .nav-link.so-no-menu { display: flex; }
 
 @media (max-width: 780px) {
   .site-shell { border: 0; border-radius: 0; margin: 0; min-height: 100vh; }
@@ -247,8 +248,6 @@ body.menu-open .menu-toggle { position: fixed; z-index: 60; }
   .brand-mark { height: 51px; width: 55px; }
   .brand-mark svg { height: 37px; width: 37px; }
   .brand strong, .brand em { font-size: 2.13rem; }
-  .menu-toggle { border-radius: 18px; height: 58px; left: 18px; top: 27px; width: 58px; }
-  .menu-toggle svg { height: 28px; width: 28px; }
   .main-content { padding: 5px 20px 121px; }
   .network-status { font-size: .91rem; top: 0; }
   .network-status::before { height: 12px; width: 12px; }
@@ -264,7 +263,7 @@ body.menu-open .menu-toggle { position: fixed; z-index: 60; }
   .nav-link { border-radius: 17px; font-size: .68rem; min-height: 66px; }
   .nav-link svg { height: 25px; width: 25px; }
   .product-grid, .draw-grid, .candidate-grid, .activity-grid { grid-template-columns: 1fr; }
-  .help-button { bottom: 101px; right: 18px; }
+  .help-button { bottom: 101px; height: 56px; right: 18px; width: 56px; }
 }
 
 @media (max-width: 420px) {
@@ -273,7 +272,6 @@ body.menu-open .menu-toggle { position: fixed; z-index: 60; }
   .brand-mark { height: 43px; width: 47px; }
   .brand-mark svg { height: 33px; width: 33px; }
   .brand strong, .brand em { font-size: 1.85rem; }
-  .menu-toggle { height: 50px; left: 13px; top: 23px; width: 50px; }
   .main-content { padding-left: 16px; padding-right: 16px; }
   .hero-grid h1 { font-size: clamp(3rem, 14.2vw, 3.7rem); }
   .nav-link { font-size: .57rem; }
@@ -285,10 +283,6 @@ body.menu-open .menu-toggle { position: fixed; z-index: 60; }
    selo de alérgenos, Lista de pedido, regras das barracas, cartelas e idade.
    ========================================================================== */
 
-/* Barra de navegação inferior: "Minha lista" (8º link) fica só no menu aberto,
-   junto de Rainha (5º) e Barracas (6º). */
-.nav-link:nth-child(8) { display: none; }
-body.menu-open .nav-link:nth-child(8) { display: flex; }
 
 /* --- Cardápio: selo de alérgenos e rodapé do card ------------------------ */
 .allergen-tag {
@@ -851,6 +845,74 @@ body.menu-open .order-bar { display: none; }
   0% { border-color: var(--orange-bright); box-shadow: 0 0 0 0 rgba(255, 140, 66, .55); transform: scale(1); }
   35% { border-color: #ffd48e; box-shadow: 0 0 34px 6px rgba(255, 140, 66, .32); transform: scale(1.035); }
   100% { box-shadow: 0 0 0 0 rgba(255, 140, 66, 0); transform: scale(1); }
+}
+
+/* ==========================================================================
+   Apoio & patrocinadores: doze cards rolando em laço.
+   ========================================================================== */
+.sponsor-marquee {
+  /* As pontas somem em degradê: sem isso o laço "aparece" e "some" na cara de
+     quem olha, e a emenda fica evidente. */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  overflow: hidden;
+  padding: 4px 0;
+}
+.sponsor-track {
+  animation: sponsor-roll 110s linear infinite;
+  display: flex;
+  width: max-content;
+}
+/* A trilha leva duas voltas iguais, e o espaçamento é margem de cada card, não
+   `gap`: com `gap` sobraria meio vão na emenda e o laço daria um pulinho. */
+@keyframes sponsor-roll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.sponsor-marquee:hover .sponsor-track,
+.sponsor-marquee:focus-within .sponsor-track { animation-play-state: paused; }
+
+.sponsor-slot {
+  align-items: center;
+  background: #141414;
+  border-color: #333;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 4px;
+  justify-content: center;
+  margin-right: 14px;
+  padding: 12px;
+  text-align: center;
+  width: 190px;
+}
+.sponsor-slot.is-vago strong { color: var(--gold); font-size: .92rem; font-weight: 700; }
+.sponsor-slot.is-vago small { color: var(--muted-deep); font-size: .74rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+.sponsor-logo { display: block; max-height: 78px; max-width: 100%; object-fit: contain; }
+
+.sponsor-cta {
+  align-items: center;
+  color: #cdcbcb;
+  display: flex;
+  font-size: .96rem;
+  gap: 13px;
+  justify-content: center;
+  line-height: 1.55;
+  margin: 20px auto 0;
+  max-width: 570px;
+}
+.sponsor-cta img { flex: 0 0 auto; height: 36px; width: 36px; }
+
+/* Quem pediu menos movimento no sistema não leva um laço andando na tela: a
+   vitrine vira uma faixa que a própria pessoa arrasta. */
+@media (prefers-reduced-motion: reduce) {
+  .sponsor-marquee { -webkit-mask-image: none; mask-image: none; overflow-x: auto; }
+  .sponsor-track { animation: none; }
+}
+@media (max-width: 620px) {
+  .sponsor-slot { margin-right: 11px; padding: 10px; width: 156px; }
+  .sponsor-cta { font-size: .91rem; gap: 11px; }
+  .sponsor-cta img { height: 32px; width: 32px; }
 }
 
 /* ==========================================================================
