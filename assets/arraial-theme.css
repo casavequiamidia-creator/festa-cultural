@@ -1563,6 +1563,7 @@ body.modo-organizador .site-shell { margin-top: 58px; }
 .tecido-card { background: #141416; border: 1px solid #313035; border-radius: 15px; display: flex; flex-direction: column; overflow: hidden; transition: border-color .16s ease; }
 .tecido-card.is-escolhido { border-color: var(--orange); box-shadow: 0 0 0 1px rgba(236, 117, 45, .35); }
 .tecido-escolher {
+  align-content: start;
   background: transparent;
   border: 0;
   color: var(--text);
@@ -1577,6 +1578,9 @@ body.modo-organizador .site-shell { margin-top: 58px; }
 .tecido-preco { color: var(--gold); font-size: 1.08rem; font-weight: 800; padding: 0 13px; }
 .tecido-resumo { color: var(--muted); font-size: .78rem; line-height: 1.4; padding: 2px 13px 0; }
 .tecido-card.is-escolhido .tecido-nome::after { color: var(--orange-bright); content: ' ✓'; }
+/* `margin-top: auto` cola o botão na base do card. Os resumos têm uma ou duas
+   linhas, e sem isso cada "Ver detalhes" parava numa altura diferente, com
+   sobra embaixo — os cards já são todos da mesma altura pela grade. */
 .tecido-detalhe {
   background: #1c1b1e;
   border: 0;
@@ -1584,6 +1588,7 @@ body.modo-organizador .site-shell { margin-top: 58px; }
   color: #ffc395;
   font-size: .8rem;
   font-weight: 800;
+  margin-top: auto;
   min-height: 42px;
   width: 100%;
 }
