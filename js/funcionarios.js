@@ -56,10 +56,14 @@ const CORTES = [['feminino', 'Feminino'], ['masculino', 'Masculino']];
 const GRADES = {
   feminino: {
     rotulo: 'Grade feminina',
+    // Caminho absoluto: a página mora em /<festa>/funcionarios, e um caminho
+    // relativo procuraria a imagem dentro da pasta da festa.
+    desenho: { url: '/assets/tecidos/medidas-femininas.png', largura: 560, altura: 597 },
     linhas: [['PPBL', 43, 52], ['PBL', 45, 57], ['MBL', 48, 62], ['GBL', 52, 69], ['GGBL', 54, 75], ['XGBL', 60, 80], ['XGGBL', 64, 85]],
   },
   masculino: {
     rotulo: 'Grade masculina',
+    desenho: { url: '/assets/tecidos/medidas-masculinas.png', largura: 560, altura: 587 },
     linhas: [['PP', 45, 64], ['P', 47, 66], ['M', 52, 71], ['G', 55, 74], ['GG', 59, 76], ['XG', 61, 80], ['XGG', 65, 83]],
   },
 };
@@ -257,6 +261,17 @@ function renderVotacao() {
   </section>`;
 }
 
+// A tabela diz "48 cm de largura", mas largura medida de onde? O desenho da
+// grade responde isso: a camisa deitada, com as duas setas nos lugares certos.
+function desenhoDaMedicao(grade) {
+  if (!grade.desenho) return '';
+  const { url, largura, altura } = grade.desenho;
+  return `<figure class="medidas-desenho">
+        <img src="${escapeHtml(url)}" width="${largura}" height="${altura}" alt="Camisa deitada de frente: a seta da altura desce pela lateral esquerda e a da largura atravessa a barra." loading="lazy" />
+        <figcaption>É assim que a confecção mede, com a camisa deitada: a <b>largura</b> atravessa a peça de uma lateral à outra, e a <b>altura</b> vai do ombro até a barra.</figcaption>
+      </figure>`;
+}
+
 // Os tamanhos só aparecem depois do gênero: cada grade tem os seus, e a
 // tabela ao lado é o que faz a pessoa acertar o tamanho sem provar a camisa.
 function blocoDeTamanhos() {
@@ -265,6 +280,7 @@ function blocoDeTamanhos() {
   return `${escolhas('farda_tamanho', grade.linhas.map(([tamanho]) => tamanhoComAdicional(tamanho)), rascunho.farda_tamanho)}
       <div class="medidas-caixa">
         <span class="cartela-label">${escapeHtml(grade.rotulo)}</span>
+        ${desenhoDaMedicao(grade)}
         <table class="medidas-tabela">
           <thead><tr><th>Tamanho</th><th>Largura</th><th>Altura</th><th>Adicional</th></tr></thead>
           <tbody>${grade.linhas.map(([tamanho, largura, altura]) => `<tr${rascunho.farda_tamanho === tamanho ? ' class="is-escolhida"' : ''}><th scope="row">${tamanho}</th><td>${largura} cm</td><td>${altura} cm</td><td>${TAMANHOS_COM_ADICIONAL.has(tamanho) && adicionalTamanho() > 0 ? `+ ${formatMoney(adicionalTamanho())}` : '—'}</td></tr>`).join('')}</tbody>

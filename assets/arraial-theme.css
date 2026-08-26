@@ -1532,6 +1532,12 @@ body.modo-organizador .site-shell { margin-top: 58px; }
 #salvar-farda { min-height: 58px; width: 100%; }
 
 .medidas-caixa { border: 1px solid #3a332c; border-radius: 13px; margin-top: 14px; padding: 14px 15px; }
+/* O desenho da medição, ao lado da tabela. Em tela estreita ele quebra para
+   uma linha só dele e cresce — é ele que explica o que a tabela quer dizer. */
+.medidas-desenho { align-items: center; display: flex; flex-wrap: wrap; gap: 13px 16px; justify-content: center; margin: 13px 0 15px; }
+.medidas-desenho img { flex: 0 0 auto; height: auto; width: 168px; }
+.medidas-desenho figcaption { color: #cbc8c6; flex: 1 1 195px; font-size: .84rem; line-height: 1.55; margin: 0; min-width: 0; }
+.medidas-desenho figcaption b { color: var(--gold); font-weight: 700; }
 .medidas-tabela { border-collapse: collapse; width: 100%; }
 .medidas-tabela th, .medidas-tabela td { border-bottom: 1px solid #2a2521; font-size: .88rem; padding: 9px 4px; text-align: left; }
 .medidas-tabela thead th { color: var(--muted); font-size: .72rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
