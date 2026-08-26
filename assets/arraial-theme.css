@@ -1439,21 +1439,24 @@ body.modo-organizador .site-shell { margin-top: 58px; }
 .modelo-lightbox figcaption { display: grid; gap: 6px; padding: 18px 20px 20px; }
 .modelo-lightbox figcaption strong { font-size: 1.3rem; }
 .modelo-lightbox figcaption span { color: var(--muted); font-size: .92rem; line-height: 1.55; }
+/* A contagem fica ao lado do nome, e não por cima da arte: sobreposta, ela
+   tapava justamente o canto onde a estampa traz o número do modelo. */
+.modelo-titulo { align-items: baseline; display: flex; gap: 10px; justify-content: space-between; margin-bottom: 6px; }
+.modelo-titulo h3 { margin: 0; }
 .modelo-votos {
-  backdrop-filter: blur(6px);
-  background: rgba(8, 8, 8, .78);
-  border: 1px solid var(--orange);
+  background: #1c1b1e;
+  border: 1px solid #464046;
   border-radius: 999px;
-  color: #ffd0a5;
-  font-size: .8rem;
+  color: var(--muted);
+  flex: 0 0 auto;
+  font-size: .76rem;
   font-weight: 800;
-  left: 11px;
-  padding: 7px 12px;
-  position: absolute;
-  top: 11px;
+  padding: 5px 11px;
+  white-space: nowrap;
 }
+.modelo-votos.tem-voto { background: rgba(236, 117, 45, .14); border-color: var(--orange); color: #ffd0a5; }
 .modelo-corpo { padding: 16px; }
-.modelo-corpo h3 { font-size: 1.15rem; margin: 0 0 6px; }
+.modelo-corpo h3 { font-size: 1.15rem; }
 .modelo-corpo p { color: var(--muted); font-size: .87rem; line-height: 1.55; margin: 0 0 12px; }
 .modelo-corpo .primary-button, .modelo-corpo .secondary-button { min-height: 48px; width: 100%; }
 .modelo-corpo .is-votado { border-color: var(--orange); color: #ffd0a5; }

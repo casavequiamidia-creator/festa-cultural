@@ -220,10 +220,12 @@ function cardDoModelo(modelo, encerrada) {
         ${renderImagem(modelo.imagem_url, modelo.nome, 'modelo-foto')}
         <span class="modelo-ampliar" aria-hidden="true">Maximizar</span>
       </button>
-      <span class="modelo-votos" title="${votantes.length} ${votantes.length === 1 ? 'voto' : 'votos'}">${votantes.length} ${votantes.length === 1 ? 'voto' : 'votos'}</span>
     </div>
     <div class="modelo-corpo">
-      <h3>${escapeHtml(modelo.nome)}</h3>
+      <div class="modelo-titulo">
+        <h3>${escapeHtml(modelo.nome)}</h3>
+        <span class="modelo-votos${votantes.length ? ' tem-voto' : ''}">${votantes.length} ${votantes.length === 1 ? 'voto' : 'votos'}</span>
+      </div>
       ${modelo.descricao ? `<p>${escapeHtml(modelo.descricao)}</p>` : ''}
       ${encerrada
         ? ''
