@@ -122,10 +122,10 @@ from (values
 update public.cronograma c
    set evento = v.evento, ordem = v.ordem::int, status = v.status
   from (values
-    ('1º Bingo - Smart TV 55"',               '2', 'proximo',    'Bingo #01'),
-    ('Sorteio da Rifa da Bicicleta',          '3', 'aguardando', 'Rifa da Bicicleta'),
-    ('2º Bingo - Air Fryer',                  '4', 'aguardando', 'Bingo #02'),
-    ('Encerramento + Leilão da Cesta Junina', '8', 'aguardando', 'Leilão da Cesta Junina')
+    ('Bingo - Smart TV 55 polegadas',  '2', 'proximo',    'Bingo #01'),
+    ('Rifa - Bicicleta aro 29',        '3', 'aguardando', 'Rifa da Bicicleta'),
+    ('Bingo - Air Fryer digital 5L',   '4', 'aguardando', 'Bingo #02'),
+    ('Leilão - Cesta junina gourmet',  '8', 'aguardando', 'Leilão da Cesta Junina')
   ) as v(evento, ordem, status, ident)
   join public.sorteios s
     on s.identificacao = v.ident
@@ -139,5 +139,6 @@ from (values
   ('Abertura da festa',                            '1', 'realizado'),
   ('Apresentação das candidatas a Rainha Caipira', '5', 'aguardando'),
   ('Apresentação de quadrilhas',                   '6', 'aguardando'),
-  ('Coroação da Rainha Caipira',                   '7', 'aguardando')
+  ('Coroação da Rainha Caipira',                   '7', 'aguardando'),
+  ('Encerramento',                                 '9', 'aguardando')
 ) as v(evento, ordem, status);
