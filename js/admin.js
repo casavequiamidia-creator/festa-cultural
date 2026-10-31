@@ -59,11 +59,28 @@ function thumb(url) { return url ? `<img class="row-thumb" src="${escapeHtml(url
 function editButton(table, id) { return `<button class="small-button" type="button" data-edit="${table}|${id}">Editar</button>`; }
 function productControls(product) { return `<div class="status-controls"><button data-product-status="${product.id}|disponivel" class="${product.status === 'disponivel' ? 'selected' : ''}" type="button">Disponível</button><button data-product-status="${product.id}|poucas_unidades" class="${product.status === 'poucas_unidades' ? 'selected' : ''}" type="button">Poucas</button><button data-product-status="${product.id}|esgotado" class="${product.status === 'esgotado' ? 'selected' : ''}" type="button">Esgotado</button></div>`; }
 
+// As barracas moram na tabela `produtos` com categoria `brincadeira`; o painel
+// as separa do cardápio para o organizador achar cada coisa onde espera.
+const ehBarraca = (product) => product.categoria === 'brincadeira';
+
 function renderProducts() {
-  $('#product-count').textContent = `${state.produtos.length} ${state.produtos.length === 1 ? 'item' : 'itens'}`;
-  $('#admin-products').innerHTML = state.produtos.length
-    ? state.produtos.map((product) => `<article class="admin-row">${thumb(product.imagem_url)}<div class="row-main"><h3>${escapeHtml(product.nome)}</h3><p>${formatMoney(product.preco)} · ${escapeHtml(product.categoria)}</p></div><div class="row-actions">${productControls(product)}${editButton('produtos', product.id)}</div></article>`).join('')
+  const itens = state.produtos.filter((product) => !ehBarraca(product));
+  $('#product-count').textContent = `${itens.length} ${itens.length === 1 ? 'item' : 'itens'}`;
+  $('#admin-products').innerHTML = itens.length
+    ? itens.map((product) => `<article class="admin-row">${thumb(product.imagem_url)}<div class="row-main"><h3>${escapeHtml(product.nome)}</h3><p>${formatMoney(product.preco)} · ${escapeHtml(product.categoria)}</p></div><div class="row-actions">${productControls(product)}${editButton('produtos', product.id)}</div></article>`).join('')
     : '<p class="muted">Nenhum item cadastrado. Toque em "+ Novo item" para começar.</p>';
+}
+
+function renderBarracas() {
+  const barracas = state.produtos.filter(ehBarraca);
+  $('#barraca-count').textContent = `${barracas.length} ${barracas.length === 1 ? 'barraca' : 'barracas'}`;
+  $('#admin-barracas').innerHTML = barracas.length
+    ? barracas.map((barraca) => {
+      const ficha = Number(barraca.preco) > 0 ? `Ficha ${formatMoney(barraca.preco)}` : 'Grátis';
+      const selo = barraca.destaque ? ` · ${escapeHtml(barraca.destaque)}` : '';
+      return `<article class="admin-row">${thumb(barraca.imagem_url)}<div class="row-main"><h3>${escapeHtml(barraca.nome)}</h3><p>${ficha}${selo}</p></div><div class="row-actions">${productControls(barraca)}${editButton('barracas', barraca.id)}</div></article>`;
+    }).join('')
+    : '<p class="muted">Nenhuma barraca cadastrada. Toque em "+ Nova barraca" para começar.</p>';
 }
 
 function renderDrawList() {
@@ -171,7 +188,7 @@ function renderDrawConsole() {
   consoleElement.innerHTML = `<div class="console-status"><span class="status status-${draw.status}">${statusLabel[draw.status]}</span><strong>${escapeHtml(draw.premio)}</strong><small>Último: ${draw.ultimo_numero ?? '—'} · Histórico: ${history.length}</small></div><div class="console-buttons"><button data-draw-status="em_andamento" type="button">Iniciar</button><button data-draw-status="aguardando" type="button">Pausar</button><button data-draw-status="realizado" type="button">Encerrar</button></div><form id="number-form" class="number-form"><label>Número chamado / lance<input id="called-number" inputmode="numeric" min="0" step="1" type="number" required /></label><button class="primary-button" type="submit">Confirmar</button></form><button id="reset-draw" class="danger-button" type="button">Limpar sorteio atual</button><p id="draw-feedback" class="feedback" role="status"></p>`;
 }
 
-function renderAll() { renderProducts(); renderSelect(); renderDrawList(); renderCandidates(); renderModelos(); renderTecidos(); renderFuncionarios(); renderSchedule(); refreshIcons(); }
+function renderAll() { renderProducts(); renderBarracas(); renderSelect(); renderDrawList(); renderCandidates(); renderModelos(); renderTecidos(); renderFuncionarios(); renderSchedule(); refreshIcons(); }
 
 /* ------------------------------------------------------------------ *
  * Festas

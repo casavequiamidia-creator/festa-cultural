@@ -93,6 +93,24 @@ function montarForms(ctx) {
         { name: 'limite_alerta', label: 'Avisar quando o estoque chegar a', type: 'number', min: '0', step: '1', hint: 'Opcional, para controle interno da organização.' },
       ],
     },
+    // Atalho do painel para as barracas: grava na mesma tabela `produtos`, só
+    // que com a categoria sempre `brincadeira` e sem os campos do cardápio.
+    barracas: {
+      tabela: 'produtos',
+      fixos: { categoria: 'brincadeira' },
+      titulo: 'barraca',
+      tituloNovo: 'Nova barraca',
+      padrao: { status: 'disponivel', preco: 0 },
+      campos: [
+        { name: 'nome', label: 'Nome da barraca', type: 'text', required: true, maxlength: 80, hint: 'Ex.: Pescaria, Argola, Boca do Palhaço.' },
+        { name: 'preco', label: 'Valor da ficha (R$)', type: 'number', step: '0.01', min: '0', required: true, emptyAs: 0, hint: 'Quanto o visitante paga para brincar. Use 0 se for grátis.' },
+        { name: 'status', label: 'Situação', type: 'select', options: [['disponivel', 'Funcionando'], ['poucas_unidades', 'Poucas fichas / prêmios'], ['esgotado', 'Encerrada']] },
+        { name: 'descricao', label: 'Descrição', type: 'textarea', maxlength: 240, hint: 'Frase curta que aparece embaixo do nome.' },
+        { name: 'imagem_url', label: 'Foto ou arte da barraca', type: 'image' },
+        { name: 'destaque', label: 'Selo de destaque', type: 'text', maxlength: 60, hint: 'Opcional. Ex.: Prêmio de R$ 200,00' },
+        { name: 'regras', label: 'Regras da brincadeira', type: 'textarea', rows: 5, hint: 'Uma regra por linha.' },
+      ],
+    },
     sorteios: {
       titulo: 'sorteio',
       padrao: { tipo: 'bingo', status: 'aguardando', valor_cartela: 0 },
@@ -322,10 +340,10 @@ export function createEditor(ctx) {
   function open(table, id = null) {
     const form = FORMS[table];
     if (!form) return;
-    const item = id ? ctx.getRecord(table, id) : { ...form.padrao };
+    const item = id ? ctx.getRecord(form.tabela || table, id) : { ...form.padrao };
     if (id && !item) return;
     atual = { table, id };
-    $d('#editor-title').textContent = id ? `Editar ${form.titulo}` : `Novo ${form.titulo}`;
+    $d('#editor-title').textContent = id ? `Editar ${form.titulo}` : (form.tituloNovo || `Novo ${form.titulo}`);
     $d('#editor-fields').innerHTML = form.campos.map((field) => fieldHtml(field, item)).join('');
     $d('#editor-delete').hidden = !id;
     aviso('');
@@ -356,7 +374,7 @@ export function createEditor(ctx) {
     event.preventDefault();
     if (!atual) return;
     const { table, id } = atual;
-    const values = collectValues(table);
+    const values = { ...collectValues(table), ...FORMS[table].fixos };
     // Um link que a normalização não entendeu vira null e apagaria o campo em
     // silêncio. Melhor devolver a digitação para o organizador corrigir.
     const recusado = FORMS[table].campos.find((field) => field.transform && String($d(`#f-${field.name}`)?.value ?? '').trim() !== '' && values[field.name] === null);
@@ -374,7 +392,7 @@ export function createEditor(ctx) {
     aviso('Salvando...');
     let gravado;
     try {
-      gravado = await write(id ? 'update' : 'insert', table, { values, id });
+      gravado = await write(id ? 'update' : 'insert', FORMS[table].tabela || table, { values, id });
     } catch (error) {
       aviso(error.message, true);
       return;
@@ -390,7 +408,7 @@ export function createEditor(ctx) {
     const { table, id } = atual;
     if (!window.confirm('Excluir este registro? Essa ação não pode ser desfeita.')) return;
     try {
-      await write('delete', table, { id });
+      await write('delete', FORMS[table].tabela || table, { id });
     } catch (error) {
       aviso(error.message, true);
       return;
