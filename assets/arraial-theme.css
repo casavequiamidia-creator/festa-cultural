@@ -53,10 +53,10 @@ body::before {
   border: 0;
   display: flex;
   flex-direction: column;
-  height: 177px;
+  min-height: 177px;
   inset: auto;
   justify-content: center;
-  padding: 28px 34px 0;
+  padding: 18px 34px 6px;
   position: relative;
   width: 100%;
   z-index: 20;
@@ -244,7 +244,7 @@ body.menu-open .nav-link.so-no-menu { display: flex; }
 
 @media (max-width: 780px) {
   .site-shell { border: 0; border-radius: 0; margin: 0; min-height: 100vh; }
-  .sidebar { height: 154px; padding-top: 21px; }
+  .sidebar { min-height: 154px; padding-top: 12px; }
   .brand-mark { height: 51px; width: 55px; }
   .brand-mark svg { height: 37px; width: 37px; }
   .brand strong, .brand em { font-size: 2.13rem; }
@@ -267,7 +267,7 @@ body.menu-open .nav-link.so-no-menu { display: flex; }
 }
 
 @media (max-width: 420px) {
-  .sidebar { height: 142px; }
+  .sidebar { min-height: 142px; }
   .brand { gap: 9px; }
   .brand-mark { height: 43px; width: 47px; }
   .brand-mark svg { height: 33px; width: 33px; }
@@ -733,6 +733,11 @@ body.menu-open .order-bar { display: none; }
 }
 .brand picture { display: block; line-height: 0; }
 
+/* O logo do Arraiá é alto (proporção ~1,27:1) e a barra cresce com ele, em vez
+   de ter altura fixa — assim o chapéu não é cortado e a tarja "Informações ao
+   vivo", que fica logo abaixo no .main-content, continua visível. */
+.sidebar > .brand:not(.admin-brand) .brand-logo { width: min(250px, 46vw); }
+
 /* O bloco de texto antigo sai de cena se algum HTML ainda o trouxer. */
 .brand .brand-mark, .brand .brand-copy { display: none; }
 
@@ -754,6 +759,7 @@ body.menu-open .order-bar { display: none; }
 @media (max-width: 780px) {
   /* Precisa caber ao lado do botão de menu, que fica fixo no canto esquerdo. */
   .brand-logo { width: min(232px, 54vw); }
+  .sidebar > .brand:not(.admin-brand) .brand-logo { width: min(210px, 54vw); }
   .admin-brand { gap: 10px; }
   .admin-brand .brand-logo { width: min(150px, 38vw); }
   .brand .admin-brand-tag { font-size: .62rem; padding-left: 10px; }
@@ -761,6 +767,7 @@ body.menu-open .order-bar { display: none; }
 
 @media (max-width: 420px) {
   .brand-logo { width: min(188px, 55vw); }
+  .sidebar > .brand:not(.admin-brand) .brand-logo { width: min(180px, 52vw); }
 }
 
 /* ==========================================================================

@@ -15,12 +15,9 @@
   <body>
     <div id="event-picker" class="event-picker" hidden>
       <div class="event-picker-inner">
-        <picture>
-          <source srcset="./assets/logo.webp" type="image/webp" />
-          <img class="picker-logo" src="./assets/logo.png" alt="Festa Cultural" width="720" height="285" />
-        </picture>
-        <h1 id="picker-title">Escolha a sua festa</h1>
-        <p id="picker-lead">Cada escola tem a sua própria página. Toque na sua para ver o cardápio, os sorteios e a programação.</p>
+        <img class="picker-logo" src="./assets/logo-arraial-casavequia-2026.png" alt="Arraiá da Casavequia 2026" />
+        <h1 id="picker-title">Arraiá da Casavequia 2026</h1>
+        <p id="picker-lead">Toque abaixo para ver o cardápio, os sorteios e a programação.</p>
         <div id="event-list" class="event-list" aria-live="polite"></div>
         <footer class="site-footer">
           <p>© 2026 <b>Paulo Roberto Ramalho Magalhães</b>. Este site e o seu código-fonte são de criação e propriedade do autor. Todos os direitos reservados.</p>
@@ -31,10 +28,7 @@
     <div class="site-shell">
       <aside class="sidebar" aria-label="Navegação principal">
         <a class="brand" id="brand-link" href="#inicio" data-route="inicio">
-          <picture id="brand-picture">
-            <source srcset="./assets/logo.webp" type="image/webp" />
-            <img class="brand-logo" src="./assets/logo.png" alt="Festa Cultural — Arraial digital da escola. Ir para o início." width="720" height="285" fetchpriority="high" />
-          </picture>
+          <img class="brand-logo" src="./assets/logo-arraial-casavequia-2026.png" alt="Arraiá da Casavequia 2026 — ir para o início" width="720" height="566" fetchpriority="high" />
         </a>
         <!-- A barra de baixo mostra cinco itens; os marcados com `so-no-menu`
              só aparecem quando o botão "Mais" abre a lista inteira. -->
@@ -43,7 +37,6 @@
           <button class="nav-link" type="button" data-route="cardapio"><i data-lucide="utensils-crossed"></i><span>Cardápio</span></button>
           <button class="nav-link" type="button" data-route="pix"><i data-lucide="qr-code"></i><span>PIX</span></button>
           <button class="nav-link" type="button" data-route="sorteios"><i data-lucide="ticket"></i><span>Sorteios</span></button>
-          <button class="nav-link so-no-menu" type="button" data-route="rainha"><i data-lucide="crown"></i><span>Rainha</span></button>
           <button class="nav-link so-no-menu" type="button" data-route="barracas"><i data-lucide="store"></i><span>Barracas</span></button>
           <button class="nav-link so-no-menu" type="button" data-route="cronograma"><i data-lucide="clock-3"></i><span>Cronograma</span></button>
           <button class="nav-link so-no-menu" type="button" data-route="lista"><i data-lucide="clipboard-list"></i><span>Minha lista</span></button>
@@ -71,6 +64,8 @@
               <h1>Uma festa boa é uma festa vivida <i>juntinho.</i></h1>
               <p class="lead">Confira o cardápio, prepare o PIX e acompanhe cada momento da nossa Festa Cultural pelo celular.</p>
               <button class="primary-button" type="button" data-route="cardapio">Ver cardápio <span aria-hidden="true">→</span></button>
+              <button class="secondary-button" type="button" data-share-festa>Compartilhar festa <span aria-hidden="true">↗</span></button>
+              <p id="share-feedback" class="feedback" role="status" aria-live="polite"></p>
             </div>
           </div>
           <div class="quick-grid">
@@ -84,10 +79,6 @@
             <div class="sponsor-marquee">
               <div id="sponsor-track" class="sponsor-track"></div>
             </div>
-            <p class="sponsor-cta">
-              <img src="./assets/whatsapp.png" alt="" width="34" height="34" />
-              <span>Entre em contato clicando no whatsapp ao lado, garanta sua marca como apoiadora do nosso evento.</span>
-            </p>
           </section>
         </section>
 
@@ -133,11 +124,6 @@
           <div id="draw-detail" class="draw-detail" hidden></div>
         </section>
 
-        <section class="screen" id="rainha" data-screen="rainha" hidden>
-          <div class="section-header"><div><p class="kicker">Nossa realeza</p><h2>Rainha Caipira</h2></div><i class="section-icon" data-lucide="crown"></i></div>
-          <p class="lead compact">Conheça as candidatas, abra o perfil de cada uma e acompanhe o desfile para a entrega da faixa.</p><div id="candidates-list" class="candidate-grid" aria-live="polite"></div>
-        </section>
-
         <section class="screen" id="barracas" data-screen="barracas" hidden>
           <div class="section-header"><div><p class="kicker">Diversão para todo mundo</p><h2>Barracas & brincadeiras</h2></div><i class="section-icon" data-lucide="store"></i></div>
           <div id="activities-list" class="activity-grid" aria-live="polite"></div>
@@ -160,9 +146,6 @@
       <span class="order-bar-copy"><strong>Minha lista</strong><small id="order-bar-summary"></small></span>
       <span class="order-bar-go" aria-hidden="true">›</span>
     </button>
-    <a id="help-button" class="help-button" href="#" target="_blank" rel="noopener" aria-label="Falar com a organização pelo WhatsApp"><img src="./assets/whatsapp.png" alt="" width="62" height="62" /></a>
-    <!-- Perfil da candidata. O conteúdo é montado em js/app.js a cada abertura. -->
-    <dialog id="candidate-profile" class="profile-dialog" aria-labelledby="profile-name"></dialog>
     <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
     <script type="module" src="./app.js"></script>
   </body>
