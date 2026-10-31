@@ -296,3 +296,8 @@ i[data-lucide] { stroke-width: 1.8; }
    disso ela encolhe com faixa nas laterais, nunca cortada). */
 .draw-image { background: #0d0d0e; height: auto; max-height: 420px; object-fit: contain; }
 .draw-image.image-placeholder { aspect-ratio: 16 / 9; }
+
+/* O selo do prêmio fica ao lado do nome, não mais sobre a foto. */
+.draw-title-row { align-items: center; display: flex; flex-wrap: wrap; gap: 8px 10px; }
+.draw-title-row h3 { margin: 0; }
+.draw-title-row .prize-order { flex: none; }
