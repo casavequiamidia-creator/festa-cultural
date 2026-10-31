@@ -132,13 +132,13 @@ update public.cronograma c
    and s.evento_id = (select id from public.eventos where slug = 'casavequia')
  where c.sorteio_id = s.id;
 
-insert into public.cronograma (evento_id, evento, ordem, status)
+insert into public.cronograma (evento_id, evento, ordem, status, categoria)
 select (select id from public.eventos where slug = 'casavequia'),
-       v.evento, v.ordem::int, v.status
+       v.evento, v.ordem::int, v.status, v.categoria
 from (values
-  ('Abertura da festa',                            '1', 'realizado'),
-  ('Apresentação das candidatas a Rainha Caipira', '5', 'aguardando'),
-  ('Apresentação de quadrilhas',                   '6', 'aguardando'),
-  ('Coroação da Rainha Caipira',                   '7', 'aguardando'),
-  ('Encerramento',                                 '9', 'aguardando')
-) as v(evento, ordem, status);
+  ('Abertura da festa',                            '1', 'realizado',  'abertura'),
+  ('Apresentação das candidatas a Rainha Caipira', '5', 'aguardando', 'apresentacao'),
+  ('Apresentação de quadrilhas',                   '6', 'aguardando', 'apresentacao'),
+  ('Coroação da Rainha Caipira',                   '7', 'aguardando', 'apresentacao'),
+  ('Encerramento',                                 '9', 'aguardando', 'encerramento')
+) as v(evento, ordem, status, categoria);

@@ -1627,6 +1627,13 @@ body.modo-organizador .site-shell { margin-top: 58px; }
 .equipe-linha > div { flex: 1 1 180px; min-width: 0; }
 .equipe-linha strong { display: block; font-size: .98rem; }
 .equipe-linha small { color: var(--muted); display: block; font-size: .82rem; line-height: 1.5; margin-top: 3px; }
+.categoria-tag { background: #2b2118; border: 1px solid #5b3d28; border-radius: 999px; color: #f3b57f; display: inline-block; font-size: .66rem; font-weight: 800; letter-spacing: .05em; margin-right: 8px; padding: 2px 8px; text-transform: uppercase; vertical-align: middle; white-space: nowrap; }
+.categoria-bingo { background: #1f2a1f; border-color: #3f6a43; color: #9fdca2; }
+.categoria-rifa { background: #2a1f2c; border-color: #6a4470; color: #dcaae3; }
+.categoria-leilao { background: #2b2616; border-color: #75622a; color: #f0d57a; }
+.categoria-apresentacao { background: #1c2630; border-color: #3b5f7d; color: #9cc8ee; }
+.categoria-encerramento { background: #272426; border-color: #484044; color: #ebc19e; }
+.timeline-item > div > .categoria-tag { display: block; margin: 7px 0 0; width: fit-content; }
 .cargo-chip { background: #272426; border: 1px solid #484044; border-radius: 999px; color: #ebc19e; font-size: .68rem; font-weight: 800; letter-spacing: .04em; margin-right: 6px; padding: 3px 8px; text-transform: uppercase; }
 
 .pgto-selo { border-radius: 999px; flex: 0 0 auto; font-size: .76rem; font-weight: 800; letter-spacing: .04em; padding: 8px 14px; }

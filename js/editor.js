@@ -55,7 +55,10 @@ export function normalizarRede(rede) {
 }
 
 // Tabelas cujo conteúdo pertence a uma festa específica.
-export const ESCOPADAS = new Set(['produtos', 'sorteios', 'cronograma', 'candidatas', 'avisos', 'funcionarios', 'farda_modelos', 'farda_tecidos']);
+// Tags de classificação do cronograma (coluna `categoria`). `bingo`, `rifa` e
+// `leilao` são os mesmos valores de `sorteios.tipo`, que o banco sincroniza.
+export const CATEGORIAS_CRONOGRAMA = [['abertura', 'Abertura'], ['apresentacao', 'Apresentação'], ['bingo', 'Bingo'], ['rifa', 'Rifa'], ['leilao', 'Leilão'], ['encerramento', 'Encerramento'], ['outro', 'Outro']];
+export const ESCOPADAS =new Set(['produtos', 'sorteios', 'cronograma', 'candidatas', 'avisos', 'funcionarios', 'farda_modelos', 'farda_tecidos']);
 export const SEM_PERMISSAO = 'Nada foi gravado. Sua conta está fora da allowlist de organizadores — peça para incluírem seu usuário na tabela private.organizadores pelo SQL Editor.';
 const SEM_LINHA = 'Nada foi gravado: este registro não existe mais. Alguém pode tê-lo excluído. Atualize a página.';
 
@@ -217,6 +220,7 @@ function montarForms(ctx) {
       padrao: { status: 'aguardando' },
       campos: [
         { name: 'evento', label: 'Evento', type: 'text', required: true, maxlength: 120, hint: 'Novo item entra no fim da fila; arraste na lista para mudar a ordem.' },
+        { name: 'categoria', label: 'Tag de classificação', type: 'select', options: [['', 'Sem tag'], ...CATEGORIAS_CRONOGRAMA], hint: 'Aparece como uma etiqueta no item. Em item ligado a sorteio ela acompanha o tipo do sorteio (bingo, rifa, leilão) e muda sozinha quando ele muda; aqui você pode trocar à mão.' },
         { name: 'status', label: 'Situação', type: 'select', options: [['aguardando', 'Aguardando'], ['proximo', 'Próximo'], ['realizado', 'Realizado']] },
         { name: 'sorteio_id', label: 'Sorteio ligado a este evento', type: 'select', numeric: true, options: () => [['', 'Nenhum'], ...ctx.getSorteios().map((draw) => [String(draw.id), `${draw.identificacao} — ${draw.premio}`])], hint: 'Se preenchido, o card ganha um atalho para acompanhar o sorteio, e o "Nº Prêmio" dele passa a seguir a posição deste item na lista.' },
       ],

@@ -1,5 +1,5 @@
 import { supabase } from './supabase-config.js';
-import { createEditor, describeError, souOrganizador, SEM_PERMISSAO } from './editor.js';
+import { createEditor, describeError, souOrganizador, SEM_PERMISSAO, CATEGORIAS_CRONOGRAMA } from './editor.js';
 
 const $ = (selector) => document.querySelector(selector);
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[char]));
@@ -165,6 +165,7 @@ function renderFuncionarios() {
 }
 
 const SITUACOES_CRONOGRAMA = [['aguardando', 'Aguardando'], ['proximo', 'Próximo'], ['realizado', 'Realizado']];
+const categoriaTag = (item) => { const rotulo = Object.fromEntries(CATEGORIAS_CRONOGRAMA)[item.categoria]; return rotulo ? `<span class="categoria-tag categoria-${escapeHtml(item.categoria)}">${escapeHtml(rotulo)}</span>` : ''; };
 function scheduleControls(item) { return `<div class="status-controls">${SITUACOES_CRONOGRAMA.map(([valor, rotulo]) => `<button data-schedule-status="${item.id}|${valor}" class="${item.status === valor ? 'selected' : ''}" type="button">${rotulo}</button>`).join('')}</div>`; }
 
 function renderSchedule() {
@@ -174,7 +175,7 @@ function renderSchedule() {
     ? state.cronograma.map((item, index) => {
       const sorteio = item.sorteio_id ? state.sorteios.find((draw) => draw.id === item.sorteio_id) : null;
       const detalhe = sorteio ? ` · ${sorteio.ordem_premio ? `${sorteio.ordem_premio}º Prêmio` : 'Sorteio'}` : '';
-      return `<article class="admin-row schedule-row is-${item.status}" draggable="true" data-schedule-id="${item.id}"><span class="drag-handle" aria-hidden="true" title="Arraste para mudar a ordem">⋮⋮</span><span class="schedule-pos">${index + 1}</span><div class="row-main"><h3>${escapeHtml(item.evento)}</h3><p>${statusLabel[item.status] || item.status}${escapeHtml(detalhe)}</p></div><div class="row-actions">${scheduleControls(item)}<span class="move-buttons"><button class="small-button" type="button" data-schedule-move="${item.id}|-1" aria-label="Subir ${escapeHtml(item.evento)}"${index === 0 ? ' disabled' : ''}>▲</button><button class="small-button" type="button" data-schedule-move="${item.id}|1" aria-label="Descer ${escapeHtml(item.evento)}"${index === total - 1 ? ' disabled' : ''}>▼</button></span>${editButton('cronograma', item.id)}</div></article>`;
+      return `<article class="admin-row schedule-row is-${item.status}" draggable="true" data-schedule-id="${item.id}"><span class="drag-handle" aria-hidden="true" title="Arraste para mudar a ordem">⋮⋮</span><span class="schedule-pos">${index + 1}</span><div class="row-main"><h3>${escapeHtml(item.evento)}</h3><p>${categoriaTag(item)}${statusLabel[item.status] || item.status}${escapeHtml(detalhe)}</p></div><div class="row-actions">${scheduleControls(item)}<span class="move-buttons"><button class="small-button" type="button" data-schedule-move="${item.id}|-1" aria-label="Subir ${escapeHtml(item.evento)}"${index === 0 ? ' disabled' : ''}>▲</button><button class="small-button" type="button" data-schedule-move="${item.id}|1" aria-label="Descer ${escapeHtml(item.evento)}"${index === total - 1 ? ' disabled' : ''}>▼</button></span>${editButton('cronograma', item.id)}</div></article>`;
     }).join('')
     : '<p class="muted">Nenhum evento cadastrado.</p>';
 }

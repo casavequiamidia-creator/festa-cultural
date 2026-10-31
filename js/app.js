@@ -63,6 +63,8 @@ function setNetwork(message, tone = '') { const element = $('#network-status'); 
 function refreshIcons() { window.lucide?.createIcons(); }
 function routeTo(route) { state.route = route; $$('.screen').forEach((screen) => { screen.hidden = screen.dataset.screen !== route; screen.classList.toggle('active', screen.dataset.screen === route); }); $$('.nav-link').forEach((link) => link.classList.toggle('active', link.dataset.route === route)); renderOrderBar(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 function renderImage(url, alt, className = 'card-image') { return url ? `<img class="${className}" src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" loading="lazy" />` : `<div class="${className} image-placeholder" role="img" aria-label="Espaço reservado para imagem de ${escapeHtml(alt)}"></div>`; }
+const categoriaLabel = { abertura: 'Abertura', apresentacao: 'Apresentação', bingo: 'Bingo', rifa: 'Rifa', leilao: 'Leilão', encerramento: 'Encerramento', outro: 'Outro' };
+const renderCategoria = (categoria) => categoriaLabel[categoria] ? `<span class="categoria-tag categoria-${escapeHtml(categoria)}">${escapeHtml(categoriaLabel[categoria])}</span>` : '';
 function renderStatus(status) { return `<span class="status status-${escapeHtml(status)}">${escapeHtml(statusLabel[status] || status)}</span>`; }
 
 // Escolhe um ícone pelo primeiro alérgeno citado, só para dar leitura rápida ao selo.
@@ -549,7 +551,7 @@ function renderDrawDetail() {
 // situação (aguardando, próximo, realizado) que ela vai marcando.
 function renderSchedule() {
   const sorted = [...state.cronograma].sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
-  $('#schedule-list').innerHTML = sorted.length ? sorted.map((item) => `<article class="timeline-item ${item.status === 'realizado' ? 'done' : ''} ${item.status === 'proximo' ? 'is-next' : ''}"><div><div class="timeline-title"><h3>${escapeHtml(item.evento)}</h3>${renderStatus(item.status)}</div>${item.sorteio_id ? `<button class="inline-link" type="button" data-open-draw="${item.sorteio_id}">Acompanhar sorteio →</button>` : ''}${chipEditar('cronograma', item.id)}</div></article>`).join('') : emptyState('A programação será publicada em breve.');
+  $('#schedule-list').innerHTML = sorted.length ? sorted.map((item) => `<article class="timeline-item ${item.status === 'realizado' ? 'done' : ''} ${item.status === 'proximo' ? 'is-next' : ''}"><div><div class="timeline-title"><h3>${escapeHtml(item.evento)}</h3>${renderStatus(item.status)}</div>${renderCategoria(item.categoria)}${item.sorteio_id ? `<button class="inline-link" type="button" data-open-draw="${item.sorteio_id}">Acompanhar sorteio →</button>` : ''}${chipEditar('cronograma', item.id)}</div></article>`).join('') : emptyState('A programação será publicada em breve.');
 }
 function renderAll() { renderHome(); renderCountdown(); renderProducts(); renderActivities(); renderDraws(); renderSchedule(); renderOrder(); renderOrderBar(); refreshIcons(); }
 
