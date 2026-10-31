@@ -27,12 +27,11 @@ const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[char]));
 const formatMoney = (value) => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-const formatTime = (value) => value ? String(value).slice(0, 5) : 'Horário a confirmar';
 const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 // Monta a data na mão: `new Date('2026-06-24')` seria lido como UTC e viraria o dia anterior no Brasil.
 const formatDate = (value) => { if (!value) return ''; const [, month, day] = String(value).slice(0, 10).split('-').map(Number); return MONTHS[month - 1] ? `${day} de ${MONTHS[month - 1]}` : ''; };
 const emptyState = (message) => `<div class="empty-state"><span>✦</span><p>${escapeHtml(message)}</p></div>`;
-const statusLabel = { disponivel: 'Disponível', poucas_unidades: 'Restam poucas unidades!', esgotado: 'Esgotado', aguardando: 'Aguardando', em_andamento: 'Em andamento', realizado: 'Realizado', pendente: 'Pendente' };
+const statusLabel = { disponivel: 'Disponível', poucas_unidades: 'Restam poucas unidades!', esgotado: 'Esgotado', aguardando: 'Aguardando', em_andamento: 'Em andamento', proximo: 'Próximo', realizado: 'Realizado' };
 const drawTypeLabel = { bingo: 'Bingo', rifa: 'Rifa', leilao: 'Leilão' };
 const cartelaLabel = { bingo: 'Cartela do bingo', rifa: 'Número da rifa', leilao: 'Leilão no palco' };
 
@@ -524,16 +523,10 @@ function renderCartela(draw) {
   return `<div class="cartela-box"><span class="cartela-label">${escapeHtml(cartelaLabel[draw.tipo] || 'Cartela')}</span><div class="cartela-row"><span>1 por</span><strong>${formatMoney(draw.valor_cartela)}</strong></div>${promo}</div>`;
 }
 
-function renderDrawWhen(draw) {
-  if (!draw.horario_sorteio) return '';
-  const date = formatDate(draw.data_sorteio);
-  return `<div class="draw-when"><i data-lucide="clock-3" aria-hidden="true"></i><div><small>Sorteio às</small><strong>${formatTime(draw.horario_sorteio)}</strong>${date ? `<small>${escapeHtml(date)}</small>` : ''}</div></div>`;
-}
-
 function renderDraws() {
   const container = $('#draws-list');
   const sorted = [...state.sorteios].sort((a, b) => (a.ordem_premio ?? 99) - (b.ordem_premio ?? 99));
-  container.innerHTML = sorted.length ? sorted.map((draw) => `<article class="draw-card ${draw.status === 'em_andamento' ? 'is-live' : ''}"><div class="draw-media">${renderImage(draw.imagem_url, `prêmio ${draw.premio}`, 'draw-image')}</div><div class="draw-card-content"><div class="card-topline"><span class="draw-type">${escapeHtml(drawTypeLabel[draw.tipo] || draw.tipo)} · ${escapeHtml(draw.identificacao)}</span>${renderStatus(draw.status)}</div><div class="draw-title-row"><h3>${escapeHtml(draw.premio)}</h3>${draw.ordem_premio ? `<span class="prize-order is-inline">${draw.ordem_premio}º Prêmio</span>` : ''}</div><p class="draw-disclaimer">Imagem meramente ilustrativa</p>${renderCartela(draw)}${renderDrawWhen(draw)}<button class="secondary-button" data-open-draw="${draw.id}" type="button">${draw.status === 'em_andamento' ? 'Acompanhe o sorteio' : 'Ver detalhes'} <span aria-hidden="true">›</span></button>${chipEditar('sorteios', draw.id)}</div></article>`).join('') : emptyState('Os sorteios aparecerão aqui assim que forem cadastrados.');
+  container.innerHTML = sorted.length ? sorted.map((draw) => `<article class="draw-card ${draw.status === 'em_andamento' ? 'is-live' : ''}"><div class="draw-media">${renderImage(draw.imagem_url, `prêmio ${draw.premio}`, 'draw-image')}</div><div class="draw-card-content"><div class="card-topline"><span class="draw-type">${escapeHtml(drawTypeLabel[draw.tipo] || draw.tipo)} · ${escapeHtml(draw.identificacao)}</span>${renderStatus(draw.status)}</div><div class="draw-title-row"><h3>${escapeHtml(draw.premio)}</h3>${draw.ordem_premio ? `<span class="prize-order is-inline">${draw.ordem_premio}º Prêmio</span>` : ''}</div><p class="draw-disclaimer">Imagem meramente ilustrativa</p>${renderCartela(draw)}<button class="secondary-button" data-open-draw="${draw.id}" type="button">${draw.status === 'em_andamento' ? 'Acompanhe o sorteio' : 'Ver detalhes'} <span aria-hidden="true">›</span></button>${chipEditar('sorteios', draw.id)}</div></article>`).join('') : emptyState('Os sorteios aparecerão aqui assim que forem cadastrados.');
   if (state.selectedDrawId) renderDrawDetail();
   refreshIcons();
 }
@@ -552,17 +545,11 @@ function renderDrawDetail() {
   detail.innerHTML = `<div class="detail-header"><div><p class="kicker">${escapeHtml(drawTypeLabel[draw.tipo] || draw.tipo)}${draw.ordem_premio ? ` · ${draw.ordem_premio}º Prêmio` : ''}</p><h2>${escapeHtml(draw.premio)}</h2><p>${escapeHtml(draw.identificacao)}</p></div>${renderStatus(draw.status)}</div><div class="last-number" data-numero-de="${draw.id}"><span>${draw.tipo === 'leilao' ? 'Último lance' : 'Último número'}</span><strong>${draw.ultimo_numero ?? '—'}</strong></div>${draw.status === 'em_andamento' ? vibracaoControl() : ''}${draw.tipo === 'bingo' ? renderBingo(numbers) : `<div class="number-history"><h3>Histórico</h3>${numbers.length ? numbers.map((number) => `<span>${number}</span>`).join('') : '<p>Nenhum número chamado ainda.</p>'}</div>`}`;
 }
 
-function eventCountdown(item) {
-  if (item.status === 'realizado') return 'Realizado';
-  const [hours, minutes] = String(item.horario_previsto || '00:00').split(':').map(Number);
-  const target = new Date(); target.setHours(hours, minutes, 0, 0);
-  const diff = target - new Date();
-  if (diff <= 0) return 'Horário previsto chegou';
-  const totalMinutes = Math.ceil(diff / 60000); return totalMinutes < 60 ? `Faltam ${totalMinutes} min` : `Faltam ${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}min`;
-}
+// Sem horários: quem manda é a ordem que a organização define no painel e a
+// situação (aguardando, próximo, realizado) que ela vai marcando.
 function renderSchedule() {
-  const sorted = [...state.cronograma].sort((a, b) => String(a.horario_previsto).localeCompare(String(b.horario_previsto)));
-  $('#schedule-list').innerHTML = sorted.length ? sorted.map((item) => `<article class="timeline-item ${item.status === 'realizado' ? 'done' : ''}"><time>${formatTime(item.horario_previsto)}</time><div><div class="timeline-title"><h3>${escapeHtml(item.evento)}</h3>${renderStatus(item.status)}</div><p>${eventCountdown(item)}</p>${item.sorteio_id ? `<button class="inline-link" type="button" data-open-draw="${item.sorteio_id}">Acompanhar sorteio →</button>` : ''}${chipEditar('cronograma', item.id)}</div></article>`).join('') : emptyState('A programação será publicada em breve.');
+  const sorted = [...state.cronograma].sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+  $('#schedule-list').innerHTML = sorted.length ? sorted.map((item) => `<article class="timeline-item ${item.status === 'realizado' ? 'done' : ''} ${item.status === 'proximo' ? 'is-next' : ''}"><div><div class="timeline-title"><h3>${escapeHtml(item.evento)}</h3>${renderStatus(item.status)}</div>${item.sorteio_id ? `<button class="inline-link" type="button" data-open-draw="${item.sorteio_id}">Acompanhar sorteio →</button>` : ''}${chipEditar('cronograma', item.id)}</div></article>`).join('') : emptyState('A programação será publicada em breve.');
 }
 function renderAll() { renderHome(); renderCountdown(); renderProducts(); renderActivities(); renderDraws(); renderSchedule(); renderOrder(); renderOrderBar(); refreshIcons(); }
 
@@ -605,7 +592,7 @@ async function loadAll() {
   const [produtos, sorteios, cronograma] = await Promise.all([
     supabase.from('produtos').select('*').eq('evento_id', evento).order('nome'),
     supabase.from('sorteios').select('*').eq('evento_id', evento).order('id', { ascending: false }),
-    supabase.from('cronograma').select('*').eq('evento_id', evento).order('horario_previsto'),
+    supabase.from('cronograma').select('*').eq('evento_id', evento),
   ]);
   const errors = [produtos, sorteios, cronograma].map((result) => result.error).filter(Boolean);
   if (errors.length) { setNetwork('Não foi possível atualizar agora. Tentando de novo...', 'offline'); console.error(errors); return; }
@@ -736,7 +723,6 @@ async function iniciar() {
   configureStaticInfo();
   renderOrder(); renderOrderBar();
   renderSponsors();
-  setInterval(renderSchedule, 30000);
   // O relógio da contagem regressiva anda sozinho; o resto da tela continua
   // vindo do Realtime e do polling.
   renderCountdown();

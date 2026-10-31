@@ -119,13 +119,10 @@ function montarForms(ctx) {
         { name: 'premio', label: 'Prêmio', type: 'text', required: true, maxlength: 140, hint: 'É o título que o visitante lê no card.' },
         { name: 'tipo', label: 'Tipo', type: 'select', required: true, options: [['bingo', 'Bingo'], ['rifa', 'Rifa'], ['leilao', 'Leilão']] },
         { name: 'status', label: 'Situação', type: 'select', options: [['aguardando', 'Aguardando'], ['em_andamento', 'Em andamento'], ['realizado', 'Realizado']] },
-        { name: 'ordem_premio', label: 'Ordem do prêmio', type: 'number', min: '1', step: '1', hint: 'Vira o selo "1º Prêmio". Vazio = sem selo.' },
         { name: 'imagem_url', label: 'Foto do prêmio', type: 'image' },
         { name: 'valor_cartela', label: 'Valor de 1 cartela (R$)', type: 'number', step: '0.01', min: '0', required: true, emptyAs: 0, hint: 'Use 0 no leilão.' },
         { name: 'cartelas_promo_qtd', label: 'Promoção: quantidade', type: 'number', min: '2', step: '1', hint: 'Ex.: 3, para "3 por R$ 10,00".' },
         { name: 'cartelas_promo_valor', label: 'Promoção: valor total (R$)', type: 'number', step: '0.01', min: '0', hint: 'Preencha junto com a quantidade, ou deixe os dois vazios.' },
-        { name: 'horario_sorteio', label: 'Horário do sorteio', type: 'time' },
-        { name: 'data_sorteio', label: 'Data do sorteio', type: 'date' },
       ],
     },
     candidatas: {
@@ -217,12 +214,11 @@ function montarForms(ctx) {
     },
     cronograma: {
       titulo: 'evento do cronograma',
-      padrao: { status: 'pendente' },
+      padrao: { status: 'aguardando' },
       campos: [
-        { name: 'evento', label: 'Evento', type: 'text', required: true, maxlength: 120 },
-        { name: 'horario_previsto', label: 'Horário previsto', type: 'time', required: true },
-        { name: 'status', label: 'Situação', type: 'select', options: [['pendente', 'Pendente'], ['realizado', 'Realizado']] },
-        { name: 'sorteio_id', label: 'Sorteio ligado a este evento', type: 'select', numeric: true, options: () => [['', 'Nenhum'], ...ctx.getSorteios().map((draw) => [String(draw.id), `${draw.identificacao} — ${draw.premio}`])], hint: 'Se preenchido, o card ganha um atalho para acompanhar o sorteio.' },
+        { name: 'evento', label: 'Evento', type: 'text', required: true, maxlength: 120, hint: 'Novo item entra no fim da fila; arraste na lista para mudar a ordem.' },
+        { name: 'status', label: 'Situação', type: 'select', options: [['aguardando', 'Aguardando'], ['proximo', 'Próximo'], ['realizado', 'Realizado']] },
+        { name: 'sorteio_id', label: 'Sorteio ligado a este evento', type: 'select', numeric: true, options: () => [['', 'Nenhum'], ...ctx.getSorteios().map((draw) => [String(draw.id), `${draw.identificacao} — ${draw.premio}`])], hint: 'Se preenchido, o card ganha um atalho para acompanhar o sorteio, e o "Nº Prêmio" dele passa a seguir a posição deste item na lista.' },
       ],
     },
   };

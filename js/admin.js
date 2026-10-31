@@ -5,7 +5,7 @@ const $ = (selector) => document.querySelector(selector);
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[char]));
 const formatMoney = (value) => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const shortTime = (value) => value ? String(value).slice(0, 5) : '';
-const statusLabel = { disponivel: 'Disponível', poucas_unidades: 'Poucas unidades', esgotado: 'Esgotado', aguardando: 'Aguardando', em_andamento: 'Em andamento', realizado: 'Realizado', pendente: 'Pendente' };
+const statusLabel = { disponivel: 'Disponível', poucas_unidades: 'Poucas unidades', esgotado: 'Esgotado', aguardando: 'Aguardando', em_andamento: 'Em andamento', proximo: 'Próximo', realizado: 'Realizado' };
 const EVENTO_KEY = 'festa-cultural:admin-evento';
 // `organizador` guarda o resultado de public.sou_organizador(): true, false, ou
 // null quando a função ainda não existe no banco (migration não aplicada).
@@ -86,7 +86,7 @@ function renderBarracas() {
 function renderDrawList() {
   $('#draw-count').textContent = `${state.sorteios.length} ${state.sorteios.length === 1 ? 'sorteio' : 'sorteios'}`;
   $('#admin-draws').innerHTML = state.sorteios.length
-    ? state.sorteios.map((draw) => `<article class="admin-row">${thumb(draw.imagem_url)}<div class="row-main"><h3>${escapeHtml(draw.premio)}</h3><p>${escapeHtml(draw.identificacao)} · ${escapeHtml(draw.tipo)} · ${statusLabel[draw.status]}${draw.horario_sorteio ? ` · ${shortTime(draw.horario_sorteio)}` : ''}</p></div><div class="row-actions">${editButton('sorteios', draw.id)}</div></article>`).join('')
+    ? state.sorteios.map((draw) => `<article class="admin-row">${thumb(draw.imagem_url)}<div class="row-main"><h3>${escapeHtml(draw.premio)}</h3><p>${escapeHtml(draw.identificacao)} · ${escapeHtml(draw.tipo)} · ${statusLabel[draw.status]}</p></div><div class="row-actions">${editButton('sorteios', draw.id)}</div></article>`).join('')
     : '<p class="muted">Nenhum sorteio cadastrado.</p>';
 }
 
@@ -164,12 +164,78 @@ function renderFuncionarios() {
     : '<p class="muted">Ninguém entrou na página da equipe ainda. Os nomes aparecem aqui sozinhos conforme cada um se identifica.</p>';
 }
 
+const SITUACOES_CRONOGRAMA = [['aguardando', 'Aguardando'], ['proximo', 'Próximo'], ['realizado', 'Realizado']];
+function scheduleControls(item) { return `<div class="status-controls">${SITUACOES_CRONOGRAMA.map(([valor, rotulo]) => `<button data-schedule-status="${item.id}|${valor}" class="${item.status === valor ? 'selected' : ''}" type="button">${rotulo}</button>`).join('')}</div>`; }
+
 function renderSchedule() {
-  $('#schedule-count').textContent = `${state.cronograma.length} ${state.cronograma.length === 1 ? 'evento' : 'eventos'}`;
-  $('#admin-schedule').innerHTML = state.cronograma.length
-    ? state.cronograma.map((event) => `<article class="admin-row"><div class="row-main"><h3>${escapeHtml(event.evento)}</h3><p>${shortTime(event.horario_previsto)} · ${statusLabel[event.status]}</p></div><div class="row-actions"><button data-schedule-toggle="${event.id}|${event.status === 'realizado' ? 'pendente' : 'realizado'}" class="small-button" type="button">${event.status === 'realizado' ? 'Reverter' : 'Marcar realizado'}</button>${editButton('cronograma', event.id)}</div></article>`).join('')
+  const total = state.cronograma.length;
+  $('#schedule-count').textContent = `${total} ${total === 1 ? 'evento' : 'eventos'}`;
+  $('#admin-schedule').innerHTML = total
+    ? state.cronograma.map((item, index) => {
+      const sorteio = item.sorteio_id ? state.sorteios.find((draw) => draw.id === item.sorteio_id) : null;
+      const detalhe = sorteio ? ` · ${sorteio.ordem_premio ? `${sorteio.ordem_premio}º Prêmio` : 'Sorteio'}` : '';
+      return `<article class="admin-row schedule-row is-${item.status}" draggable="true" data-schedule-id="${item.id}"><span class="drag-handle" aria-hidden="true" title="Arraste para mudar a ordem">⋮⋮</span><span class="schedule-pos">${index + 1}</span><div class="row-main"><h3>${escapeHtml(item.evento)}</h3><p>${statusLabel[item.status] || item.status}${escapeHtml(detalhe)}</p></div><div class="row-actions">${scheduleControls(item)}<span class="move-buttons"><button class="small-button" type="button" data-schedule-move="${item.id}|-1" aria-label="Subir ${escapeHtml(item.evento)}"${index === 0 ? ' disabled' : ''}>▲</button><button class="small-button" type="button" data-schedule-move="${item.id}|1" aria-label="Descer ${escapeHtml(item.evento)}"${index === total - 1 ? ' disabled' : ''}>▼</button></span>${editButton('cronograma', item.id)}</div></article>`;
+    }).join('')
     : '<p class="muted">Nenhum evento cadastrado.</p>';
 }
+
+// Uma ida só ao banco: o RPC regrava a ordem inteira e o gatilho do banco
+// renumera o "Nº Prêmio" dos sorteios ligados. A tela já muda na hora.
+async function reordenarCronograma(ids) {
+  const anterior = state.cronograma;
+  state.cronograma = ids.map((id) => anterior.find((item) => item.id === id)).filter(Boolean);
+  renderSchedule();
+  const { error } = await supabase.rpc('reordenar_cronograma', { p_evento: state.eventoId, p_ids: ids });
+  if (error) { state.cronograma = anterior; renderSchedule(); throw new Error(describeError(error)); }
+  feedback('#schedule-feedback', 'Ordem atualizada.');
+}
+
+function moverNoCronograma(id, passo) {
+  const ids = state.cronograma.map((item) => item.id);
+  const de = ids.indexOf(Number(id));
+  const para = de + passo;
+  if (de < 0 || para < 0 || para >= ids.length) return Promise.resolve();
+  ids.splice(para, 0, ids.splice(de, 1)[0]);
+  return reordenarCronograma(ids);
+}
+
+let arrastando = null;
+const linhaDoCronograma = (alvo) => alvo.closest?.('[data-schedule-id]');
+document.addEventListener('dragstart', (event) => {
+  const linha = linhaDoCronograma(event.target);
+  if (!linha) return;
+  arrastando = Number(linha.dataset.scheduleId);
+  linha.classList.add('dragging');
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('text/plain', String(arrastando));
+});
+document.addEventListener('dragover', (event) => {
+  const linha = linhaDoCronograma(event.target);
+  if (arrastando === null || !linha) return;
+  event.preventDefault();
+  document.querySelectorAll('.schedule-row.drag-over').forEach((el) => { if (el !== linha) el.classList.remove('drag-over'); });
+  linha.classList.add('drag-over');
+});
+document.addEventListener('dragend', () => {
+  arrastando = null;
+  document.querySelectorAll('.schedule-row.dragging, .schedule-row.drag-over').forEach((el) => el.classList.remove('dragging', 'drag-over'));
+});
+document.addEventListener('drop', async (event) => {
+  const linha = linhaDoCronograma(event.target);
+  if (arrastando === null || !linha) return;
+  event.preventDefault();
+  const origem = arrastando;
+  const destino = Number(linha.dataset.scheduleId);
+  arrastando = null;
+  document.querySelectorAll('.schedule-row.dragging, .schedule-row.drag-over').forEach((el) => el.classList.remove('dragging', 'drag-over'));
+  if (origem === destino) return;
+  const ids = state.cronograma.map((item) => item.id);
+  const de = ids.indexOf(origem);
+  const para = ids.indexOf(destino);
+  if (de < 0 || para < 0) return;
+  ids.splice(para, 0, ids.splice(de, 1)[0]);
+  try { await reordenarCronograma(ids); } catch (error) { feedback('#schedule-feedback', error.message, true); }
+});
 
 function renderSelect() {
   const select = $('#active-draw');
@@ -344,7 +410,7 @@ async function loadData() {
   const [produtos, sorteios, cronograma, candidatas, modelos, tecidos, funcionarios] = await Promise.all([
     supabase.from('produtos').select('*').eq('evento_id', evento).order('nome'),
     supabase.from('sorteios').select('*').eq('evento_id', evento).order('id', { ascending: false }),
-    supabase.from('cronograma').select('*').eq('evento_id', evento).order('horario_previsto'),
+    supabase.from('cronograma').select('*').eq('evento_id', evento),
     supabase.from('candidatas').select('*').eq('evento_id', evento).order('nome'),
     supabase.from('farda_modelos').select('*').eq('evento_id', evento).order('id'),
     supabase.from('farda_tecidos').select('*').eq('evento_id', evento).order('ordem').order('id'),
@@ -353,7 +419,7 @@ async function loadData() {
   const error = [produtos, sorteios, cronograma, candidatas, modelos, tecidos, funcionarios].find((result) => result.error)?.error;
   if (error) { mostrarProblema(`Não foi possível carregar os dados desta festa. ${describeError(error)}`); return; }
   limparProblema();
-  state.produtos = produtos.data || []; state.sorteios = sorteios.data || []; state.cronograma = cronograma.data || []; state.candidatas = candidatas.data || [];
+  state.produtos = produtos.data || []; state.sorteios = sorteios.data || []; state.cronograma = [...(cronograma.data || [])].sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0) || a.id - b.id); state.candidatas = candidatas.data || [];
   state.farda_modelos = modelos.data || []; state.farda_tecidos = tecidos.data || []; state.funcionarios = funcionarios.data || [];
   await loadCodigoDaEquipe();
   renderAll();
@@ -397,7 +463,8 @@ document.addEventListener('click', async (event) => {
   if (edit) { const [table, id] = edit.dataset.edit.split('|'); editor.open(table, id); return; }
   const product = event.target.closest('[data-product-status]');
   const drawStatus = event.target.closest('[data-draw-status]');
-  const schedule = event.target.closest('[data-schedule-toggle]');
+  const scheduleStatus = event.target.closest('[data-schedule-status]');
+  const scheduleMove = event.target.closest('[data-schedule-move]');
   const pagamento = event.target.closest('[data-func-pago]');
   // Erro de pagamento tem de aparecer no card dos funcionários, não no do
   // sorteio — onde ninguém estaria olhando.
@@ -407,10 +474,17 @@ document.addEventListener('click', async (event) => {
     catch (error) { feedback('#funcionario-feedback', error.message, true); }
     return;
   }
+  // Erro do cronograma aparece no card do cronograma.
+  if (scheduleStatus || scheduleMove) {
+    try {
+      if (scheduleStatus) { const [id, status] = scheduleStatus.dataset.scheduleStatus.split('|'); await updateTable('cronograma', { status }, id); feedback('#schedule-feedback', 'Situação atualizada.'); }
+      else { const [id, passo] = scheduleMove.dataset.scheduleMove.split('|'); await moverNoCronograma(id, Number(passo)); }
+    } catch (error) { feedback('#schedule-feedback', error.message, true); }
+    return;
+  }
   try {
     if (product) { const [id, status] = product.dataset.productStatus.split('|'); await updateTable('produtos', { status }, id); }
     if (drawStatus) { await updateTable('sorteios', { status: drawStatus.dataset.drawStatus }, $('#active-draw').value); feedback('#draw-feedback', 'Estado atualizado.'); }
-    if (schedule) { const [id, status] = schedule.dataset.scheduleToggle.split('|'); await updateTable('cronograma', { status }, id); }
   } catch (error) { feedback('#draw-feedback', error.message, true); }
 });
 

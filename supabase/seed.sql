@@ -77,21 +77,21 @@ from (values
 -- ============================================================================
 insert into public.sorteios (evento_id, identificacao, premio, tipo, valor_cartela, status,
                              numeros_sorteados, ultimo_numero, ordem_premio,
-                             horario_sorteio, data_sorteio, cartelas_promo_qtd, cartelas_promo_valor)
+                             cartelas_promo_qtd, cartelas_promo_valor)
 select (select id from public.eventos where slug = 'casavequia'),
        v.identificacao, v.premio, v.tipo, v.valor_cartela::numeric, v.status,
        v.numeros::jsonb, v.ultimo::int, v.ordem::smallint,
-       v.horario::time, v.data::date, v.promo_qtd::smallint, v.promo_valor::numeric
+       v.promo_qtd::smallint, v.promo_valor::numeric
 from (values
   ('Bingo #01', 'Smart TV 55 polegadas 4K com Wi-Fi e comandos de voz', 'bingo', '5', 'em_andamento',
-   '[5, 11, 14, 18, 22, 29, 33, 37, 44, 46, 52, 57, 63, 69, 72]', '5', '1', '18:00', '2026-06-24', '3', '10'),
+   '[5, 11, 14, 18, 22, 29, 33, 37, 44, 46, 52, 57, 63, 69, 72]', '5', '1', '3', '10'),
   ('Rifa da Bicicleta', 'Bicicleta aro 29, 21 marchas, freio a disco', 'rifa', '10', 'aguardando',
-   '[]', null, '2', '19:00', '2026-06-24', '3', '25'),
+   '[]', null, '2', '3', '25'),
   ('Bingo #02', 'Air Fryer digital 5L com diversas funções', 'bingo', '5', 'aguardando',
-   '[]', null, '3', '20:00', '2026-06-24', '3', '10'),
+   '[]', null, '3', '3', '10'),
   ('Leilão da Cesta Junina', 'Cesta junina gourmet com delícias típicas', 'leilao', '0', 'aguardando',
-   '[]', null, '4', '23:00', '2026-06-24', null, null)
-) as v(identificacao, premio, tipo, valor_cartela, status, numeros, ultimo, ordem, horario, data, promo_qtd, promo_valor);
+   '[]', null, '4', null, null)
+) as v(identificacao, premio, tipo, valor_cartela, status, numeros, ultimo, ordem, promo_qtd, promo_valor);
 
 -- ============================================================================
 -- RAINHA CAIPIRA — 4 candidatas fictícias.
@@ -108,29 +108,31 @@ from (values
 ) as v(nome, idade, detalhes, horario);
 
 -- ============================================================================
--- CRONOGRAMA — noite completa, das 17h às 23h.
--- A abertura já entra como "realizado" para ver a tag no card.
+-- CRONOGRAMA — a programação da noite, só na ordem (sem horários).
+-- A abertura já entra como "realizado" e o primeiro bingo como "proximo",
+-- para ver as duas tags nos cards. O "Nº Prêmio" de cada sorteio ligado ao
+-- cronograma é calculado sozinho pela posição dele aqui (gatilho do banco).
 -- ============================================================================
-insert into public.cronograma (evento_id, evento, horario_previsto, status)
+insert into public.cronograma (evento_id, evento, ordem, status)
 select (select id from public.eventos where slug = 'casavequia'),
-       v.evento, v.horario::time, v.status
+       v.evento, v.ordem::int, v.status
 from (values
-  ('Abertura da festa',                            '17:00', 'realizado'),
-  ('Apresentação das candidatas a Rainha Caipira', '21:00', 'pendente'),
-  ('Apresentação de quadrilhas',                   '22:00', 'pendente'),
-  ('Coroação da Rainha Caipira',                   '22:30', 'pendente')
-) as v(evento, horario, status);
+  ('Abertura da festa',                            '1', 'realizado'),
+  ('Apresentação das candidatas a Rainha Caipira', '5', 'aguardando'),
+  ('Apresentação de quadrilhas',                   '6', 'aguardando'),
+  ('Coroação da Rainha Caipira',                   '7', 'aguardando')
+) as v(evento, ordem, status);
 
 -- Os eventos ligados a um sorteio buscam o id pela identificação, dentro da
 -- mesma festa — duas festas podem ter um "Bingo #01" cada uma.
-insert into public.cronograma (evento_id, evento, horario_previsto, sorteio_id)
-select s.evento_id, v.evento, v.horario::time, s.id
+insert into public.cronograma (evento_id, evento, ordem, status, sorteio_id)
+select s.evento_id, v.evento, v.ordem::int, v.status, s.id
 from (values
-  ('1º Bingo - Smart TV 55"',               '18:00', 'Bingo #01'),
-  ('Sorteio da Rifa da Bicicleta',          '19:00', 'Rifa da Bicicleta'),
-  ('2º Bingo - Air Fryer',                  '20:00', 'Bingo #02'),
-  ('Encerramento + Leilão da Cesta Junina', '23:00', 'Leilão da Cesta Junina')
-) as v(evento, horario, ident)
+  ('1º Bingo - Smart TV 55"',               '2', 'proximo',    'Bingo #01'),
+  ('Sorteio da Rifa da Bicicleta',          '3', 'aguardando', 'Rifa da Bicicleta'),
+  ('2º Bingo - Air Fryer',                  '4', 'aguardando', 'Bingo #02'),
+  ('Encerramento + Leilão da Cesta Junina', '8', 'aguardando', 'Leilão da Cesta Junina')
+) as v(evento, ordem, status, ident)
 join public.sorteios s
   on s.identificacao = v.ident
  and s.evento_id = (select id from public.eventos where slug = 'casavequia');

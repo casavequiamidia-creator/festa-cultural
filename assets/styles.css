@@ -106,7 +106,7 @@ i[data-lucide] { stroke-width: 1.8; }
 .status-disponivel, .status-em_andamento { background: rgba(84, 201, 130, .11); border-color: rgba(84, 201, 130, .55); color: #81df9f; }
 .status-poucas_unidades { background: rgba(245, 193, 119, .11); border-color: rgba(245, 193, 119, .55); color: #ffda9d; }
 .status-esgotado, .status-realizado { background: rgba(236, 113, 102, .1); border-color: rgba(236, 113, 102, .52); color: #fa9991; }
-.status-aguardando, .status-pendente { background: #222225; border-color: #4a484d; color: #b7b3b9; }
+.status-aguardando { background: #222225; border-color: #4a484d; color: #b7b3b9; }
 .card-content h3, .draw-card h3, .candidate-card h3, .activity-card h3 { font-size: 1.15rem; margin: 0 0 8px; }
 .card-content p, .draw-card p, .candidate-card p, .activity-card p { color: var(--muted); font-size: .84rem; line-height: 1.55; margin-bottom: 16px; }
 .price { color: var(--gold); font-size: 1.05rem; }
@@ -171,10 +171,9 @@ i[data-lucide] { stroke-width: 1.8; }
 .activity-image.image-placeholder { aspect-ratio: 16 / 9; }
 .activity-card>div:last-child { padding: 18px; }
 .timeline { border-left: 1px solid #704325; margin-left: 13px; max-width: 880px; padding-left: 27px; }
-.timeline-item { display: grid; gap: 14px; grid-template-columns: 75px 1fr; margin: 0 0 27px; position: relative; }
+.timeline-item { display: grid; gap: 14px; grid-template-columns: 1fr; margin: 0 0 27px; position: relative; }
 .timeline-item::before { background: var(--orange); border: 4px solid var(--bg); border-radius: 50%; box-shadow: 0 0 0 1px #754324; content: ''; height: 15px; left: -35px; position: absolute; top: 4px; width: 15px; }
 .timeline-item.done::before { background: var(--green); box-shadow: 0 0 0 1px var(--green); }
-.timeline-item time { color: var(--orange-bright); font-size: .88rem; font-weight: 800; }
 .timeline-title { align-items: flex-start; display: flex; gap: 9px; justify-content: space-between; }
 .timeline-title h3 { font-size: 1.12rem; margin: 0; }
 .timeline-item p { color: var(--muted); font-size: .83rem; margin: 7px 0; }
@@ -265,7 +264,6 @@ i[data-lucide] { stroke-width: 1.8; }
   .bingo-board b { margin: -4px -4px 5px; }
   .bingo-board span { font-size: .62rem; height: 22px; margin: 1px; width: 22px; }
   .timeline { margin-left: 7px; padding-left: 21px; }
-  .timeline-item { grid-template-columns: 60px 1fr; }
   .timeline-item::before { left: -29px; }
   .help-button { bottom: 93px; height: 49px; right: 18px; width: 49px; }
   .public-alert { left: 16px; max-width: calc(100% - 32px); top: 12px; }
@@ -301,3 +299,23 @@ i[data-lucide] { stroke-width: 1.8; }
 .draw-title-row { align-items: center; display: flex; flex-wrap: wrap; gap: 8px 10px; }
 .draw-title-row h3 { margin: 0; }
 .draw-title-row .prize-order { flex: none; }
+
+/* Cronograma sem horários: só a ordem e a situação de cada item. */
+.status-proximo { background: rgba(245, 150, 60, .13); border-color: rgba(245, 150, 60, .62); color: #ffb468; }
+.timeline-item.is-next::before { background: var(--orange-bright); box-shadow: 0 0 0 1px var(--orange-bright), 0 0 12px rgba(245, 150, 60, .65); }
+.timeline-item.is-next { border-color: rgba(245, 150, 60, .55); }
+
+/* Painel: lista do cronograma que se reordena arrastando ou pelas setas. */
+.schedule-row { cursor: default; justify-content: flex-start; transition: background .15s, border-color .15s, opacity .15s; }
+.schedule-row .row-main { flex: 1 1 auto; min-width: 0; }
+.schedule-row .row-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.schedule-row .drag-handle { color: var(--muted); cursor: grab; flex: none; font-size: 1.1rem; letter-spacing: -3px; line-height: 1; padding: 6px 4px; touch-action: none; user-select: none; }
+.schedule-row .drag-handle:active { cursor: grabbing; }
+.schedule-pos { background: #252326; border: 1px solid #464046; border-radius: 50%; color: var(--orange-bright); flex: none; font-size: .78rem; font-weight: 800; height: 28px; line-height: 26px; text-align: center; width: 28px; }
+.schedule-row.is-realizado .row-main h3 { opacity: .6; text-decoration: line-through; }
+.schedule-row.is-proximo .schedule-pos { background: var(--orange); border-color: var(--orange); color: #fff7f0; }
+.schedule-row.dragging { opacity: .4; }
+.schedule-row.drag-over { background: rgba(245, 150, 60, .1); box-shadow: inset 0 2px 0 var(--orange-bright); }
+.move-buttons { display: inline-flex; gap: 4px; }
+.move-buttons button { min-width: 34px; padding: 0 8px; }
+.move-buttons button:disabled { cursor: not-allowed; opacity: .35; }

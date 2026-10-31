@@ -514,11 +514,6 @@ body.menu-open .order-bar { display: none; }
 .cartela-row strong { color: var(--gold); font-size: 1.05rem; }
 .cartela-note { color: var(--muted) !important; font-size: .87rem !important; margin: 0 !important; }
 
-.draw-when { align-items: center; display: flex; gap: 12px; margin-bottom: 15px; }
-.draw-when>svg, .draw-when>i { color: var(--orange-bright); flex: 0 0 auto; height: 26px; width: 26px; }
-.draw-when div { display: grid; gap: 1px; }
-.draw-when small { color: var(--muted); font-size: .82rem; }
-.draw-when strong { color: var(--orange-bright); font-size: 1.3rem; line-height: 1.1; }
 .draw-card .secondary-button { align-items: center; display: flex; gap: 8px; justify-content: center; min-height: 52px; }
 .draw-card .secondary-button span { font-size: 1.25rem; line-height: 1; }
 
