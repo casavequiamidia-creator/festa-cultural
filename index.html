@@ -30,14 +30,14 @@
         <a class="brand" id="brand-link" href="#inicio" data-route="inicio">
           <img class="brand-logo" src="./assets/logo-arraial-casavequia-2026.png" alt="Arraiá da Casavequia 2026 — ir para o início" width="720" height="566" fetchpriority="high" />
         </a>
-        <!-- A barra de baixo mostra cinco itens; os marcados com `so-no-menu`
-             só aparecem quando o botão "Mais" abre a lista inteira. -->
+        <!-- A barra de baixo mostra cinco itens (quatro telas e o "Mais"); os
+             marcados com `so-no-menu` só aparecem quando o botão "Mais" abre a
+             lista inteira. -->
         <nav class="nav-links" id="nav-links" aria-label="Seções do evento">
           <button class="nav-link active" type="button" data-route="inicio"><i data-lucide="house"></i><span>Início</span></button>
           <button class="nav-link" type="button" data-route="cardapio"><i data-lucide="utensils-crossed"></i><span>Cardápio</span></button>
-          <button class="nav-link" type="button" data-route="pix"><i data-lucide="qr-code"></i><span>PIX</span></button>
           <button class="nav-link" type="button" data-route="sorteios"><i data-lucide="ticket"></i><span>Sorteios</span></button>
-          <button class="nav-link so-no-menu" type="button" data-route="barracas"><i data-lucide="store"></i><span>Barracas</span></button>
+          <button class="nav-link" type="button" data-route="barracas"><i data-lucide="store"></i><span>Barracas</span></button>
           <button class="nav-link so-no-menu" type="button" data-route="cronograma"><i data-lucide="clock-3"></i><span>Cronograma</span></button>
           <button class="nav-link so-no-menu" type="button" data-route="lista"><i data-lucide="clipboard-list"></i><span>Minha lista</span></button>
           <button class="nav-link nav-mais" type="button" data-toggle-menu aria-expanded="false" aria-controls="nav-links" aria-label="Ver todas as telas">
@@ -62,14 +62,13 @@
             <div>
               <p class="kicker">Seja bem-vindo!</p>
               <h1>Uma festa boa é uma festa vivida <i>juntinho.</i></h1>
-              <p class="lead">Confira o cardápio, prepare o PIX e acompanhe cada momento da nossa Festa Cultural pelo celular.</p>
+              <p class="lead">Confira o cardápio e acompanhe cada momento da nossa Festa Cultural pelo celular.</p>
               <button class="primary-button" type="button" data-route="cardapio">Ver cardápio <span aria-hidden="true">→</span></button>
               <button class="secondary-button" type="button" data-share-festa>Compartilhar festa <span aria-hidden="true">↗</span></button>
               <p id="share-feedback" class="feedback" role="status" aria-live="polite"></p>
             </div>
           </div>
           <div class="quick-grid">
-            <button class="quick-card" type="button" data-route="pix"><i data-lucide="wallet-cards"></i><span><strong>Pagamento fácil</strong><small>Copie sua chave PIX e evite filas na hora de pagar.</small></span></button>
             <button class="quick-card" type="button" data-route="cronograma"><i data-lucide="clock-3"></i><span><strong>Não perca nada</strong><small>Veja a programação e os próximos horários.</small></span></button>
             <button class="quick-card" type="button" data-route="sorteios"><i data-lucide="radio"></i><span><strong>Ao vivo</strong><small>O bingo e as filas atualizam sem recarregar.</small></span></button>
           </div>
@@ -84,7 +83,6 @@
 
         <section class="screen" id="cardapio" data-screen="cardapio" hidden>
           <div class="section-header"><div><p class="kicker">Sabores da festa</p><h2>Cardápio digital</h2></div><i class="section-icon" data-lucide="utensils-crossed"></i></div>
-          <div class="pix-tip"><span>💡</span><p>Vai pagar no PIX? Copie a chave na aba <button type="button" data-route="pix">PIX</button> e abra o app do seu banco antes de entrar na fila.</p></div>
           <div class="filter-row" role="group" aria-label="Filtrar cardápio">
             <button class="filter active" data-category="todos" type="button">Todos</button><button class="filter" data-category="comida" type="button">Comidas</button><button class="filter" data-category="salgado" type="button">Salgados</button><button class="filter" data-category="doce" type="button">Doces</button><button class="filter" data-category="bebida" type="button">Bebidas</button>
           </div>
@@ -107,15 +105,9 @@
             <div class="order-total"><span>Total da lista</span><strong id="order-total-value">R$ 0,00</strong></div>
             <p class="order-caixa"><i data-lucide="smartphone" aria-hidden="true"></i> Mostre esta tela no caixa para agilizar seu atendimento.</p>
             <div class="order-actions">
-              <button class="primary-button" type="button" data-route="pix">Ver chave PIX <span aria-hidden="true">→</span></button>
               <button id="clear-order" class="danger-button" type="button">Limpar lista</button>
             </div>
           </div>
-        </section>
-
-        <section class="screen" id="pix" data-screen="pix" hidden>
-          <div class="section-header"><div><p class="kicker">Pagamento rápido</p><h2>PIX da escola</h2></div><i class="section-icon" data-lucide="qr-code"></i></div>
-          <div class="pix-layout"><div class="qr-placeholder image-slot" aria-label="Espaço reservado para QR Code PIX"></div><div class="pix-details"><p class="section-label">Copie e cole</p><h3>Pague com segurança</h3><p>Abra o aplicativo do seu banco, confira os dados e apresente o comprovante na barraca.</p><code id="pix-key">CHAVE PIX A CONFIGURAR</code><button id="copy-pix" class="primary-button" type="button">Copiar chave PIX</button><p id="pix-feedback" class="feedback" role="status" aria-live="polite"></p><dl><div><dt>Favorecido</dt><dd id="pix-holder">Escola — a configurar</dd></div><div><dt>Instituição</dt><dd id="pix-bank">Banco — a configurar</dd></div></dl></div></div>
         </section>
 
         <section class="screen" id="sorteios" data-screen="sorteios" hidden>

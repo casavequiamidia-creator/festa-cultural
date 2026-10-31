@@ -3,7 +3,7 @@
 ## 📝 1. Visão Geral do Projeto
 Este projeto consiste em um cardápio e painel logístico digital em tempo real para a Festa Junina/Arraial de uma escola. O objetivo principal é centralizar informações sobre comidas, brincadeiras, cronogramas, candidatas à Rainha Caipira e o acompanhamento ao vivo de bingos, rifas e leilões.
 
-O sistema visa reduzir filas nas barracas (alertando os usuários para prepararem o PIX) e engajar o público permitindo que acompanhem os sorteios direto do celular, sem necessidade de atualizar a página.
+O sistema visa reduzir filas nas barracas (com a lista de pedido montada antes de chegar ao caixa) e engajar o público permitindo que acompanhem os sorteios direto do celular, sem necessidade de atualizar a página.
 
 ### Stack Tecnológica Utilizada
 - **Front-end:** HTML5 puro, CSS3 (responsivo com foco em Mobile-First) e JavaScript (ES6+).
@@ -57,7 +57,7 @@ Para garantir o funcionamento em tempo real, as seguintes tabelas precisam ser c
 - `rifa_titulo`, `rifa_descricao`, `rifa_url`: text (rifa online da candidata, exibida na aba Rifa online do perfil)
 
 ### Tabela: `eventos` (uma festa por linha)
-Além de `slug`, `nome`, `escola`, `logo_url`, dos campos de PIX e do `whatsapp`, é aqui que mora **quando** a festa acontece:
+Além de `slug`, `nome`, `escola`, `logo_url`, e do `whatsapp`, é aqui que mora **quando** a festa acontece:
 
 - `data_evento`: date — o dia. É o que liga a contagem regressiva da tela inicial; vazio, o bloco da contagem nem aparece.
 - `hora_evento`: time — a hora de início. Vazio, a contagem mira a virada do dia e o convite da agenda vira evento de dia inteiro.
@@ -73,9 +73,9 @@ Servem à página `/<festa>/funcionarios`, que não é linkada no site do visita
 - `farda_votos`: um voto por funcionário (`unique (funcionario_id)`); votar de novo troca o voto.
 - `equipe_acesso`: `evento_id`, `codigo` — a senha da equipe. Fica **fora** de `eventos` de propósito: aquela tabela é lida com `select *` pelo site público e a senha sairia junto na resposta.
 - `private.funcionario_acesso`: `funcionario_id`, `token`. O token é o que identifica a pessoa no celular dela. Mora em `private` porque, em `public`, qualquer um leria a lista de tokens e agiria pelos colegas.
-- Em `eventos`: `farda_votacao_ate`, `farda_pagamento_ate`, `farda_modelo_id`, `farda_adicional_polo`, `farda_adicional_tamanho`, `contribuicao_ate`, `contribuicao_texto`, `equipe_pix_chave`, `equipe_pix_favorecido`, `equipe_pix_cargo`.
+- Em `eventos`: `farda_votacao_ate`, `farda_pagamento_ate`, `farda_modelo_id`, `farda_adicional_polo`, `farda_adicional_tamanho`, `contribuicao_ate`, `contribuicao_texto`.
 
-**O PIX da equipe não é o PIX da festa.** `pix_chave` é a conta da escola, que atende o visitante na barraca; farda e contribuição são cobrança interna, e quem recebe é a pessoa da coordenação. Por isso as três colunas `equipe_pix_*`. São opcionais: festa que não cadastrou o seu continua caindo no PIX da festa, como era antes desta separação existir.
+As colunas `pix_*` e `equipe_pix_*` continuam na tabela por herança, mas nada no site nem no painel as lê ou grava mais.
 
 **Grade de tamanhos.** Duas grades distintas, e o banco não deixa misturar: a feminina vai de `PPBL` a `XGGBL` e a masculina de `PP` a `XGG`. O sufixo `BL` é o que diz à confecção que o molde é baby look, então `funcionarios_grade_coerente_check` exige que `farda_corte = 'feminino'` case exatamente com o tamanho terminado em `BL`. As medidas em centímetros são da confecção, iguais em toda escola, e por isso moram no front-end (`GRADES`, em `js/funcionarios.js`) em vez de num campo por festa — e junto delas o desenho da medição de cada grade (`assets/tecidos/medidas-femininas.png` e `medidas-masculinas.png`), que é o que traduz "48 cm de largura" para quem nunca mediu uma camisa.
 
@@ -97,16 +97,14 @@ Servem à página `/<festa>/funcionarios`, que não é linkada no site do visita
 O site será uma Single Page Application (SPA) simples ou um conjunto de páginas interligadas por uma **Sidebar Lateral** (que se transforma em uma barra de navegação inferior em dispositivos móveis).
 
 ### Menu de Navegação
-Barra flutuante no rodapé da tela, com **cinco** itens à mão — Início, Cardápio, PIX, Sorteios e **Mais**. O botão *Mais* abre a lista inteira por cima da tela e vira *Fechar* no mesmo lugar; é o único caminho para o menu completo, já que não há mais botão no alto da página. As telas que só moram no menu levam a classe `so-no-menu` no HTML (nada de `nth-child`, que quebrava a cada botão novo).
+Barra flutuante no rodapé da tela, com **cinco** itens à mão — Início, Cardápio, Sorteios, Barracas e **Mais**. O botão *Mais* abre a lista inteira por cima da tela e vira *Fechar* no mesmo lugar; é o único caminho para o menu completo, já que não há mais botão no alto da página. As telas que só moram no menu levam a classe `so-no-menu` no HTML (nada de `nth-child`, que quebrava a cada botão novo).
 
 1. 🏠 Início — na barra
 2. 🍔 Cardápio — na barra
-3. 📱 PIX — na barra
-4. 🎟️ Sorteios & Bingo — na barra
-5. 👑 Rainha Caipira — no *Mais*
-6. 🎯 Barracas & Brincadeiras — no *Mais*
-7. 📅 Cronograma — no *Mais*
-8. 📋 Minha lista — no *Mais*
+3. 🎟️ Sorteios & Bingo — na barra
+4. 🎯 Barracas & Brincadeiras — na barra
+5. 📅 Cronograma — no *Mais*
+6. 📋 Minha lista — no *Mais*
 
 ### Rodapé (todas as páginas)
 Aviso de direito autoral repetido no site do visitante, no painel da organização e na página da equipe — inclusive na tela de escolha da festa, que esconde a `.site-shell` e por isso precisa do seu próprio. Cada uma dessas telas é um endereço que pode ser aberto sozinho, sem passar pelas outras. O texto diz que o site e o código-fonte são de criação e propriedade de **Paulo Roberto Ramalho Magalhães** e oferece o e-mail `01paulorm@gmail.com` a quem quiser usar o sistema. O ano é fixo no HTML (ano da criação, que é o que a lei registra) — não se atualiza sozinho.
@@ -123,16 +121,12 @@ Aviso de direito autoral repetido no site do visitante, no painel da organizaç�
 - **Botão de Ajuda Rápida:** o botão flutuante do canto inferior direito é a **logo do WhatsApp** (`assets/whatsapp.png`), sem fundo nem borda — a arte já é um círculo verde com anel branco. Leva a `wa.me` com o número de `eventos.whatsapp`, ou o reserva de `EVENT_CONFIG` quando a festa não tem o seu.
 
 #### 🍔 3.2. Tela: Cardápio Digital
-- **Aviso Estratégico no Topo (Fixo):** *"💡 Vai pagar no PIX? Copie a chave na aba PIX e abra o app do seu banco antes de entrar na fila!"*
 - **Botões de Filtro Rápido:** `[Todos]` `[Comidas]` `[Salgados]` `[Doces]` `[Bebidas]`. A filtragem deve ocorrer instantaneamente via JavaScript.
 - **Exibição dos Itens:** Cards com imagem, título, preço e badge de status.
   - Se `status == 'poucas_unidades'`: Exibir tag amarela *"Restam poucas unidades!"*.
   - Se `status == 'esgotado'`: Aplicar opacidade no card, desabilitar interações e exibir carimbo visual *"ESGOTADO"*.
 
-#### 📱 3.3. Tela: PIX
-- **QR Code:** Imagem ampliada do QR Code estático da conta da escola.
-- **Botão Copiar Chave (Copia e Cola):** Botão destacado que executa `navigator.clipboard.writeText()` para copiar a chave Pix. Ao clicar, exibe um feedback visual temporário: *"Chave copiada! Abra o app do seu banco."*
-- **Dados de Conferência:** Exibição clara do Nome do Favorecido e Instituição Financeira abaixo do código para validação do usuário.
+> **Sem PIX.** O site não tem tela, aviso nem campo de PIX ou QR Code de pagamento: o pagamento não é pré-programado e acontece no caixa.
 
 #### 🎟️ 3.4. Tela: Sorteios & Bingo (Mecanismo Realtime)
 - Exibe a lista de prêmios dividida por abas ou cards com tags: `Aguardando` (Cinza), `Em andamento` (Verde piscante) e `Realizado` (Vermelho).
@@ -176,10 +170,9 @@ Endereço separado, com `noindex`, **não linkado** no site do visitante — só
     - **Modelo:** feminino ou masculino — é essa escolha que define a grade exibida logo abaixo.
     - **Tamanho:** os sete da grade escolhida, com a tabela de medidas em centímetros ao lado e, acima dela, o **desenho da medição** — a camisa deitada, com a seta da altura na lateral e a da largura na barra. É o desenho que diz de onde a onde a confecção mede, e ele muda com a grade: molde baby look no feminino, reto no masculino. `GG`, `XG` e `XGG` (e os `BL` equivalentes) mostram o adicional (`farda_adicional_tamanho`) na etiqueta e na coluna *Adicional* da tabela.
     - **Baby look não é perguntado:** `farda_baby_look` é derivado de `farda_corte`, porque a grade feminina já é a baby look. A coluna continua no banco para a confecção ler no pedido.
-    - **A conta:** ao pé do formulário, o valor discriminado (tecido + adicionais) e o total, atualizado a cada escolha. Depois de salvar, um bloco verde diz **quanto enviar no PIX**, com o bloco do PIX da equipe e o prazo de pagamento.
+    - **A conta:** ao pé do formulário, o valor discriminado (tecido + adicionais) e o total, atualizado a cada escolha. Depois de salvar, um bloco verde diz o **valor da farda** e o prazo de pagamento.
   - *Quem já preencheu:* lista com o nome de cadastro, o resumo das escolhas e o selo **A pagar** (vermelho) ou **Pago** (verde), além do prazo de pagamento.
-- **Bloco do PIX** (nas duas abas, depois de salvar a farda e no topo da Contribuição): a **chave à vista** — quem paga pelo computador, ou com o celular de outra pessoa, precisa poder digitar — o **nome e o cargo de quem recebe** logo abaixo, e o botão que copia. Copiada, a nota confirma: *"Chave PIX copiada. Confira o nome antes de enviar: Fulano — Cargo."*
-- **Aba Contribuição:** texto de abertura, prazo, o bloco do PIX, e a lista dos funcionários com o setor ao lado do nome, o valor e o mesmo par de selos.
+- **Aba Contribuição:** texto de abertura, prazo, e a lista dos funcionários com o setor ao lado do nome, o valor e o mesmo par de selos.
 - **Quem dá baixa nos pagamentos é a organização**, no painel. O funcionário enxerga o status, mas não o altera.
 
 ---

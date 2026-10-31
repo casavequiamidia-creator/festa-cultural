@@ -89,7 +89,7 @@ function valorDaFarda(escolha) {
 // Espelha a constraint do banco: um nome e, no máximo, uma inicial.
 const NOME_COSTAS = /^[\p{L}'.-]{2,20}( \p{L}\.?)?$/u;
 
-const TEXTO_CONTRIBUICAO_PADRAO = 'A lista abaixo é dos funcionários que atuam na escola e do valor com que cada um contribui para a realização da Festa Cultural. Pague pelo PIX e a organização confirma o recebimento aqui mesmo.';
+const TEXTO_CONTRIBUICAO_PADRAO = 'A lista abaixo é dos funcionários que atuam na escola e do valor com que cada um contribui para a realização da Festa Cultural. A organização confirma o recebimento aqui mesmo.';
 
 /* ------------------------------------------------------------------ *
  * Qual festa é esta
@@ -569,7 +569,6 @@ function renderContribuicaoTopo() {
     <div class="equipe-bloco-corpo">
       <p class="equipe-texto">${escapeHtml(evento.contribuicao_texto || TEXTO_CONTRIBUICAO_PADRAO)}</p>
       ${prazo ? `<p class="equipe-aviso">Prazo para pagar: <b>${escapeHtml(formatDate(prazo))}</b>.${prazoEncerrado(prazo) ? ' <b>Prazo vencido.</b>' : ''}</p>` : ''}
-      ${blocoPix('#pix-feedback')}
     </div>
   </section>`;
 }
@@ -777,59 +776,11 @@ async function salvarFarda(botao) {
 function mostrarValorAPagar(total) {
   const alvo = $('#farda-pago');
   if (!alvo) { avisarEm('#farda-feedback', 'Pronto! Os seus dados entraram na lista.'); return; }
-  const evento = state.evento || {};
   alvo.hidden = false;
   alvo.innerHTML = `<p class="section-label">Farda salva</p>
-    <h3>Envie <strong>${formatMoney(total)}</strong> no PIX</h3>
-    ${blocoPix('#farda-pix-feedback')}
+    <h3>Valor da sua farda: <strong>${formatMoney(total)}</strong></h3>
     ${state.evento?.farda_pagamento_ate ? `<p class="valor-nota">Prazo para pagar: ${escapeHtml(formatDate(state.evento.farda_pagamento_ate))}.</p>` : ''}
     <p class="valor-nota">A organização confirma o recebimento e o seu selo vira <b>Pago</b> na lista abaixo.</p>`;
-}
-
-/* ------------------------------------------------------------------ *
- * PIX da equipe
- *
- * Farda e contribuição são cobrança interna: quem recebe é a pessoa da
- * coordenação, não a conta da escola que atende o visitante na barraca. Festa
- * que ainda não cadastrou o PIX próprio da equipe continua caindo no da festa,
- * como era antes desta separação existir.
- * ------------------------------------------------------------------ */
-function pixDaEquipe() {
-  const evento = state.evento || {};
-  if (evento.equipe_pix_chave) {
-    return { chave: evento.equipe_pix_chave, favorecido: evento.equipe_pix_favorecido || '', detalhe: evento.equipe_pix_cargo || '' };
-  }
-  return { chave: evento.pix_chave || '', favorecido: evento.pix_favorecido || '', detalhe: evento.pix_banco || '' };
-}
-
-// A chave fica à vista, e não só dentro do botão: quem paga pelo computador ou
-// com o celular de outra pessoa precisa poder digitar, e todo mundo merece ver
-// para quem está mandando antes de mandar.
-function blocoPix(idDaNota, vazio = 'A organização ainda não cadastrou a chave PIX.') {
-  const pix = pixDaEquipe();
-  if (!pix.chave) return `<p class="medidas-vazia">${escapeHtml(vazio)}</p>`;
-  const quem = [pix.favorecido, pix.detalhe].filter(Boolean);
-  return `<div class="equipe-pix">
-        <span class="cartela-label">Chave PIX</span>
-        <code class="equipe-pix-chave">${escapeHtml(pix.chave)}</code>
-        ${quem.length ? `<p class="equipe-pix-quem"><b>${escapeHtml(quem[0])}</b>${quem[1] ? `<small>${escapeHtml(quem[1])}</small>` : ''}</p>` : ''}
-        <button class="primary-button" type="button" data-copiar-pix="${escapeHtml(idDaNota)}">Copiar a chave PIX <span aria-hidden="true">⧉</span></button>
-        <p id="${escapeHtml(idDaNota.slice(1))}" class="feedback" role="status" aria-live="polite"></p>
-      </div>`;
-}
-
-async function copiarPix(seletorDaNota = '#pix-feedback') {
-  const nota = $(seletorDaNota);
-  const pix = pixDaEquipe();
-  const confira = pix.favorecido ? `Confira o nome antes de enviar: ${pix.favorecido}${pix.detalhe ? ` — ${pix.detalhe}` : ''}.` : 'Confira o nome no app do seu banco antes de enviar.';
-  try {
-    await navigator.clipboard.writeText(pix.chave);
-    nota.classList.remove('error');
-    nota.textContent = `Chave PIX copiada. ${confira}`;
-  } catch {
-    nota.classList.add('error');
-    nota.textContent = `Não deu para copiar sozinho. A chave é ${pix.chave}. ${confira}`;
-  }
 }
 
 /* ------------------------------------------------------------------ *
@@ -895,8 +846,6 @@ document.addEventListener('click', (event) => {
   }
 
   if (event.target.closest('#salvar-farda')) { salvarFarda(event.target.closest('#salvar-farda')); return; }
-  const pix = event.target.closest('[data-copiar-pix]');
-  if (pix) { copiarPix(pix.dataset.copiarPix); }
 });
 
 // O nome das costas é digitado; guarda a cada tecla para não se perder quando

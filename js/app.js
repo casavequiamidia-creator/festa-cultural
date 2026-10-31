@@ -1,4 +1,4 @@
-import { EVENT_CONFIG, supabase } from './supabase-config.js';
+import { supabase } from './supabase-config.js';
 
 // `pedido` é a Lista de pedido do visitante: um mapa { idDoProduto: quantidade }
 // guardado apenas no localStorage do próprio celular. Nada é enviado ao banco.
@@ -112,7 +112,7 @@ async function ativarModoOrganizador() {
     onSaved: async (table) => {
       if (table === 'eventos') {
         const { data } = await supabase.from('eventos').select('*').eq('id', state.evento.id).maybeSingle();
-        if (data) { state.evento = data; aplicarMarca(data); configureStaticInfo(); }
+        if (data) { state.evento = data; aplicarMarca(data); }
       }
       await loadAll();
     },
@@ -608,27 +608,6 @@ async function loadAll() {
 }
 
 function showPublicAlert(message) { const alert = $('#public-alert'); alert.textContent = `📣 ${message}`; alert.hidden = false; clearTimeout(showPublicAlert.timer); showPublicAlert.timer = setTimeout(() => { alert.hidden = true; }, 25000); }
-// Cada festa tem o PIX próprio; EVENT_CONFIG só vale de reserva para um
-// evento ainda sem esses campos preenchidos.
-function pixDoEvento() {
-  const evento = state.evento || {};
-  return {
-    chave: evento.pix_chave || EVENT_CONFIG.pixKey,
-    favorecido: evento.pix_favorecido || EVENT_CONFIG.pixHolder,
-    banco: evento.pix_banco || EVENT_CONFIG.pixBank,
-    qr: evento.pix_qr_url || EVENT_CONFIG.pixQrImage,
-  };
-}
-
-function configureStaticInfo() {
-  const pix = pixDoEvento();
-  $('#pix-key').textContent = pix.chave;
-  $('#pix-holder').textContent = pix.favorecido;
-  $('#pix-bank').textContent = pix.banco;
-  const qr = $('.qr-placeholder');
-  if (pix.qr) qr.innerHTML = `<img src="${escapeHtml(pix.qr)}" alt="QR Code PIX" />`;
-}
-
 function agendarReconexao() {
   clearTimeout(reconnectTimer);
   state.tentativas = Math.min(state.tentativas + 1, 6);
@@ -693,7 +672,6 @@ document.addEventListener('click', (event) => {
 });
 $$('.filter').forEach((button) => button.addEventListener('click', () => { state.category = button.dataset.category; $$('.filter').forEach((item) => item.classList.toggle('active', item === button)); renderProducts(); }));
 $('#clear-order').addEventListener('click', () => { if (!Object.keys(state.pedido).length || !window.confirm('Limpar toda a sua lista de pedido?')) return; state.pedido = {}; saveOrder(); renderProducts(); renderOrder(); renderOrderBar(); });
-$('#copy-pix').addEventListener('click', async () => { try { await navigator.clipboard.writeText(pixDoEvento().chave); $('#pix-feedback').textContent = 'Chave copiada! Abra o app do seu banco.'; } catch { $('#pix-feedback').textContent = 'Não foi possível copiar automaticamente. Selecione a chave acima.'; } });
 
 // Compartilha só o endereço público da festa: nada de query, hash nem a página
 // do painel (admin.html). A origem vem do próprio site, o caminho é fixo.
@@ -722,7 +700,6 @@ async function iniciar() {
   ORDER_KEY = `festa-cultural:lista-de-pedido:${evento.slug}`;
   state.pedido = loadOrder();
   aplicarMarca(evento);
-  configureStaticInfo();
   renderOrder(); renderOrderBar();
   renderSponsors();
   // O relógio da contagem regressiva anda sozinho; o resto da tela continua
