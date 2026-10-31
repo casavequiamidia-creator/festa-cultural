@@ -112,7 +112,26 @@ from (values
 -- A abertura já entra como "realizado" e o primeiro bingo como "proximo",
 -- para ver as duas tags nos cards. O "Nº Prêmio" de cada sorteio ligado ao
 -- cronograma é calculado sozinho pela posição dele aqui (gatilho do banco).
+--
+-- Cada sorteio inserido acima já ganhou o seu item no cronograma sozinho (outro
+-- gatilho do banco). Aqui só acertamos o título, a ordem e a situação deles —
+-- inserir de novo duplicaria os itens.
 -- ============================================================================
+-- Os itens ligados a um sorteio buscam o sorteio pela identificação, dentro da
+-- mesma festa — duas festas podem ter um "Bingo #01" cada uma.
+update public.cronograma c
+   set evento = v.evento, ordem = v.ordem::int, status = v.status
+  from (values
+    ('1º Bingo - Smart TV 55"',               '2', 'proximo',    'Bingo #01'),
+    ('Sorteio da Rifa da Bicicleta',          '3', 'aguardando', 'Rifa da Bicicleta'),
+    ('2º Bingo - Air Fryer',                  '4', 'aguardando', 'Bingo #02'),
+    ('Encerramento + Leilão da Cesta Junina', '8', 'aguardando', 'Leilão da Cesta Junina')
+  ) as v(evento, ordem, status, ident)
+  join public.sorteios s
+    on s.identificacao = v.ident
+   and s.evento_id = (select id from public.eventos where slug = 'casavequia')
+ where c.sorteio_id = s.id;
+
 insert into public.cronograma (evento_id, evento, ordem, status)
 select (select id from public.eventos where slug = 'casavequia'),
        v.evento, v.ordem::int, v.status
@@ -122,17 +141,3 @@ from (values
   ('Apresentação de quadrilhas',                   '6', 'aguardando'),
   ('Coroação da Rainha Caipira',                   '7', 'aguardando')
 ) as v(evento, ordem, status);
-
--- Os eventos ligados a um sorteio buscam o id pela identificação, dentro da
--- mesma festa — duas festas podem ter um "Bingo #01" cada uma.
-insert into public.cronograma (evento_id, evento, ordem, status, sorteio_id)
-select s.evento_id, v.evento, v.ordem::int, v.status, s.id
-from (values
-  ('1º Bingo - Smart TV 55"',               '2', 'proximo',    'Bingo #01'),
-  ('Sorteio da Rifa da Bicicleta',          '3', 'aguardando', 'Rifa da Bicicleta'),
-  ('2º Bingo - Air Fryer',                  '4', 'aguardando', 'Bingo #02'),
-  ('Encerramento + Leilão da Cesta Junina', '8', 'aguardando', 'Leilão da Cesta Junina')
-) as v(evento, ordem, status, ident)
-join public.sorteios s
-  on s.identificacao = v.ident
- and s.evento_id = (select id from public.eventos where slug = 'casavequia');
