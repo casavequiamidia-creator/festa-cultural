@@ -290,3 +290,9 @@ i[data-lucide] { stroke-width: 1.8; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }
+
+/* A foto do prêmio também mostra a imagem inteira: a altura sai da proporção
+   dela, com teto para foto muito alta não virar um card de meia tela (passando
+   disso ela encolhe com faixa nas laterais, nunca cortada). */
+.draw-image { background: #0d0d0e; height: auto; max-height: 420px; object-fit: contain; }
+.draw-image.image-placeholder { aspect-ratio: 16 / 9; }
